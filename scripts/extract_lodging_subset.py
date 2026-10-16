@@ -61,6 +61,15 @@ def main() -> int:
     # 只读 Sheet1 —— 这一行是有意的，别改成读全部工作表
     df = pd.read_excel(src, sheet_name="Sheet1", header=None)
 
+    # 校验：确认没有误读调查表。官方附件里混有「修改建议调查表」（见 ambiguity-log A-001），
+    # 它的标题和正式表很像，肉眼容易看错，所以让脚本自己拦住。
+    check = pd.read_excel(src, sheet_name="Sheet1", header=None, nrows=3)
+    title = " ".join(str(v) for v in check.values.ravel() if not pd.isna(v))
+    if "建议" in title or "调查表" in title:
+        print(f"错误：读到的是调查表而非正式标准表，标题为「{title[:60]}」")
+        print("      正式表标题应含「住宿费标准明细表」或「住宿费标准调整表」")
+        return 1
+
     rows = []
     current_region = ""
     for i in range(DATA_START_ROW, len(df)):
