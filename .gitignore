@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# 环境实例不放进仓库（定义在 environment.yml，用 conda 重建）
+envs/
+
+# 数据库产物（可由脚本重建）
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# 编辑器与系统
+.vscode/
+.idea/
+~$*
+Thumbs.db
+desktop.ini
+.DS_Store
+*.tmp
+*.bak
+
+# 注意：sources/ 下的原始文件（HTML / XLS）**要提交**。
+# 它们是全部规则的依据来源，共约 220 KB，体积可接受，
+# 且丢掉就无法回溯。校验值与抓取记录见 sources/SOURCES.md。

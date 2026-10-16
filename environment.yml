@@ -1,0 +1,18 @@
+# 项目环境定义。实例建在 C:\App\Miniconda\envs\travel-claim-rules
+#   conda env create -f environment.yml
+#
+# 说明：规则用 YAML 存，不需要重依赖。pandas/xlrd 只在解析财政部原始
+# 明细表（.xls，2016 年生成）时用到；pydantic/pytest 在第 2 周实现引擎和
+# 测试时使用，一并装好避免中途改环境。
+name: travel-claim-rules
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.12
+  - pyyaml
+  - pandas
+  - xlrd          # 读 .xls（xlrd 2.x 仍支持旧版 xls，不支持 xlsx）
+  - pydantic
+  - pytest
