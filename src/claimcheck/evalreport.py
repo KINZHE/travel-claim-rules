@@ -13,7 +13,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-from .ablation import compare_full_vs_retrieve, run_ablation, verification_effect
+from .ablation import compare_full_vs_retrieve, run_ablation
 from .evaluate import (
     METRICS, Question, Record, failure_counts, file_hash, group_by,
     run_all, self_check, summarize,
@@ -298,6 +298,31 @@ def build_report(questions: list[Question]) -> str:
             f"共 {len(failed_records)} 条。每条给出题目、期望、系统实际输出与失败归类。",
             "",
         ]
+
+        # 拒答失败是最系统性的那一类，单独说明根因与已排除的修法
+        under_refuse = [r for r in failed_records if r.failure == "UNDER_REFUSE"]
+        if under_refuse:
+            n_refuse = sum(1 for q in questions if q.route == "refuse")
+            lines += [
+                "### 先说最系统性的那一类：该拒没拒",
+                "",
+                f"{n_refuse} 道拒答题里错了 {len(under_refuse)} 道。这不是散点，是同一个原因：",
+                "**系统没有「这个问题制度没覆盖」的通用判断**，只依赖一张关键词清单",
+                "（生病、医疗、通讯、旅游……）。关键词之外的话题，它就会去引用一条不相干的条文来回答。",
+                "",
+                "试过两条确定性的判据，**都不成立**，记录在此以免重走：",
+                "",
+                "| 候选判据 | 设想 | 实测 | 结论 |",
+                "| --- | --- | --- | --- |",
+                "| 检索分数阈值 | 答不出的题分数应当低 | 拒答题 3.9–11.5；正常题 1.9–45.9 | 区间完全重叠，**不可分** |",
+                "| 问句词汇在语料中的覆盖率 | 没覆盖的话题词汇覆盖率低 | 拒答题 25–54%；正常题 14–85% | 区间完全重叠，**不可分** |",
+                "",
+                "要真正解决，需要判断「召回的条文是否真的回答了这个问题」——这是语义层面的判断，",
+                "确定性方法做不到。**所以本期不做伪装式的修补**：不靠扩充关键词清单去贴合这 6 道题，",
+                "那正是冻结机制要防的事。",
+                "",
+            ]
+
         for r in failed_records:
             q = r.q
             a = r.answer

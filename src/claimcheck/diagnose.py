@@ -18,12 +18,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
-from typing import Any, Callable
 
 import yaml
 
-from .checks import SEVERITY, expand_check_items
-from .engine import _check_item_id, _split_label, run
+from .checks import expand_check_items
+from .engine import run
 from .matcher import collect_known_cities, scope_matches
 from .model import Claim, Rule, in_window
 from .universe import (

@@ -14,8 +14,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .checks import SEVERITY, Outcome, expand_check_items, run_check, worst
-from .matcher import collect_known_cities, scope_matches, specificity, when_matches
+from .checks import Outcome, expand_check_items, run_check, worst
+from .matcher import collect_known_cities, scope_matches, when_matches
 from .model import Claim, Rule, in_window
 
 

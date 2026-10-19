@@ -18,12 +18,14 @@ ORDER BY r.rule_id;
 
 -- 2. 每条规则的触发次数与状态分布
 --    次数少但一直在报错的规则，往往是最需要先人工确认的。
+--    排除 '<未覆盖>'：它是「这里没有规则」的哨兵，不是规则（见 docs/sqlite-schema.md）。
 SELECT rule_id,
        COUNT(*) AS hits,
        SUM(status = '通过')     AS passed,
        SUM(status = '不通过')   AS failed,
        SUM(status = '信息不足') AS insufficient
 FROM results
+WHERE rule_id <> '<未覆盖>'
 GROUP BY rule_id
 ORDER BY hits DESC, rule_id;
 
@@ -93,6 +95,7 @@ SELECT rule_id,
        COUNT(DISTINCT status) AS distinct_statuses,
        COUNT(*)               AS total_hits
 FROM results
+WHERE rule_id <> '<未覆盖>'
 GROUP BY rule_id
 HAVING COUNT(*) >= 2
 ORDER BY distinct_statuses DESC, total_hits DESC;

@@ -20,7 +20,7 @@ CREATE TABLE runs (
 CREATE TABLE results (
     run_id       TEXT NOT NULL,
     check_item   TEXT NOT NULL,      -- 检查项 ID，如 R-LODGING-JS-CORE::base::司局级
-    rule_id      TEXT NOT NULL,
+    rule_id      TEXT NOT NULL,      -- 见下方说明：可能是「未覆盖」哨兵值
     topic        TEXT,
     category     TEXT,               -- 归属费用项；NULL 表示整单级
     status       TEXT NOT NULL,      -- 通过 / 不通过 / 信息不足 / 需人工确认 / 制度未覆盖 / 超支自理
@@ -28,7 +28,24 @@ CREATE TABLE results (
     message      TEXT,
     PRIMARY KEY (run_id, check_item)
 );
+
+-- 规则清单单独一张表。有它才能问「哪些规则从未被触发过」——
+-- 只用 results 表回答不了这个问题，因为没触发过的规则在里面根本没有行。
+CREATE TABLE rules (
+    rule_id TEXT PRIMARY KEY,
+    topic   TEXT,
+    kind    TEXT,
+    file    TEXT
+);
 ```
+
+### `rule_id` 的哨兵值
+
+当一份申请里出现规则库**完全没有对应规则**的费用类别时，引擎会补一条结果，
+`rule_id` 记为 `<未覆盖>`。它不是一条规则，只是「这里没有规则」这个事实的记录。
+
+做规则级统计时要排除它，例如查「每条规则触发次数」时加 `AND rule_id <> '<未覆盖>'`；
+查「从未被触发的规则」不受影响——那条查询以 `rules` 表为左表，哨兵不会出现在结果里。
 
 两张索引：`results(rule_id)`、`runs(claim_id)`。
 

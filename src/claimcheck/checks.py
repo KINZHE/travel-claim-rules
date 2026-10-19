@@ -17,7 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from .model import MISSING, Claim, Rule, get_path, iter_path
+from .model import MISSING, Claim, Rule, iter_path
 from .predicate import Tri, UndefinedField, evaluate
 
 # 结果状态。顺序即严重度，合并时取最高的。
