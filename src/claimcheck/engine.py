@@ -69,6 +69,18 @@ def _category_of(rule: Rule) -> str | None:
     return rule.topic or None
 
 
+def _split_label(rule: Rule, suffix: str, claim: Claim) -> str:
+    """分项检查项的命名，必须与 checks.expand_check_items 的展开名一致，
+    否则覆盖率分子永远对不上分母。"""
+    level = claim.get("applicant.person_level")
+    level = level if isinstance(level, str) else "main"
+    if rule.kind == "threshold":
+        return f"{suffix}::{level}"      # base::司局级 / peak::司局级
+    if rule.kind == "ordinal":
+        return f"{level}::{suffix}"      # 司局级::飞机
+    return suffix
+
+
 def _check_item_id(rule: Rule, claim: Claim) -> str:
     """运行期实际产生的检查项 ID。要和 expand_check_items 的命名对齐。"""
     levels = claim.get("applicant.person_level")
@@ -134,6 +146,22 @@ def run(claim: Claim, rules: list[Rule], as_of: str | None = None) -> EngineResu
 
         # --- 5. 求值 ---
         outcome: Outcome = run_check(rule, claim)
+        if outcome.splits:
+            # 一条规则实际产生了多个检查项（等级类逐交通工具、阈值类区分淡旺季）。
+            # 不再额外记一条「汇总项」——各分项本身带正确的状态，
+            # 按费用项合并时自然会取到最坏的那个，多记一条只会让结果表变长。
+            for suffix, sub in outcome.splits.items():
+                results.append(CheckResult(
+                    rule_id=rule.id,
+                    check_item=f"{rule.id}::{_split_label(rule, suffix, claim)}",
+                    topic=rule.topic,
+                    scope_category=_category_of(rule),
+                    status=sub.status,
+                    observed=sub.observed,
+                    message=sub.message,
+                ))
+            continue
+
         results.append(CheckResult(
             rule_id=rule.id,
             check_item=_check_item_id(rule, claim),

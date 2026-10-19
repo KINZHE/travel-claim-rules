@@ -73,6 +73,38 @@ def cmd_items(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_diagnose(args: argparse.Namespace) -> int:
+    import yaml
+
+    from . import diagnose as D
+    from .report import build_report
+    from .universe import load_universe
+
+    rules = load_rules(args.rules)
+    universe = load_universe()
+    known_path = Path(args.known_gaps)
+    known = yaml.safe_load(known_path.read_text(encoding="utf-8")) if known_path.exists() else {}
+
+    report = build_report(rules, universe, known)
+
+    if args.out:
+        Path(args.out).write_text(report, encoding="utf-8")
+        print(f"报告已写入 {args.out}")
+    else:
+        print(report)
+
+    # 退出码：确定冲突、缺口、或无法复现的声明 → 非零，便于当 CI 门禁用。
+    # 疑似冲突和无效规则不阻断——它们本来就需要人来判断。
+    conflicts = D.find_conflicts(rules, universe)
+    gaps = D.find_gaps(rules, universe, known.get("accepted_gaps", []))
+    gaps += D.find_structural_gaps(rules, universe)
+    blocking = len(conflicts["confirmed"]) + len(gaps) + len(conflicts["unresolved"])
+    if blocking and args.strict:
+        print(f"\n严格模式：{blocking} 项需要处理")
+        return 1
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -91,6 +123,14 @@ def main(argv: list[str] | None = None) -> int:
 
     p_items = sub.add_parser("items", help="列出全部检查项")
     p_items.set_defaults(func=cmd_items)
+
+    p_diag = sub.add_parser("diagnose", help="对规则库做质量诊断")
+    p_diag.add_argument("--out", help="写入 Markdown 报告（不给则打印到终端）")
+    p_diag.add_argument("--known-gaps", default=str(ROOT / "docs" / "known-gaps.yaml"),
+                        help="已申报缺口与豁免的文件")
+    p_diag.add_argument("--strict", action="store_true",
+                        help="确定冲突、缺口、无法复现的声明存在时返回非零（用于 CI 门禁）")
+    p_diag.set_defaults(func=cmd_diagnose)
 
     args = parser.parse_args(argv)
     return args.func(args)

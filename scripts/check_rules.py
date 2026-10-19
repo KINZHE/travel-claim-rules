@@ -400,6 +400,37 @@ def check_structure(rules: list[dict]) -> None:
 
 # ---------------------------------------------------------------- 主流程
 
+def check_known_gaps(rules: list[dict]) -> None:
+    """known-gaps.yaml 的完整性。
+
+    白名单最容易变成垃圾桶：报错了就加进去，久而久之诊断层什么都不报。
+    所以这里强制两条——每条豁免必须写理由、必须指向真实存在的规则。
+    """
+    path = ROOT / "docs" / "known-gaps.yaml"
+    if not path.exists():
+        err("缺少 docs/known-gaps.yaml")
+        return
+
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    ids = {r.get("id") for r in rules}
+
+    for key in ("intentionally_inert", "linked_rules"):
+        for item in data.get(key, []) or []:
+            rid = item.get("rule_id")
+            if rid not in ids:
+                err(f"known-gaps.{key}: 引用了不存在的规则 {rid}")
+            reason = (item.get("reason") or "").strip()
+            if not reason:
+                err(f"known-gaps.{key}: {rid} 没有写理由——豁免必须说明为什么")
+            elif len(reason) < 15:
+                warnings.append(f"known-gaps.{key}: {rid} 的理由过短，可能不足以说明问题")
+
+    for item in data.get("documented_gaps", []) or []:
+        for field_name in ("id", "what", "reason"):
+            if not item.get(field_name):
+                err(f"known-gaps.documented_gaps: 条目缺 {field_name}")
+
+
 def main() -> int:
     if not RULES_DIR.exists():
         print("找不到 rules 目录")
@@ -416,6 +447,7 @@ def main() -> int:
     check_predicate_ast(rules)
     check_source_articles(rules)
     check_lodging_thresholds(rules)
+    check_known_gaps(rules)
 
     print(f"规则总数: {len(rules)}")
     by_topic: dict[str, int] = {}

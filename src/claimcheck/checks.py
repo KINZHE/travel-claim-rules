@@ -34,10 +34,16 @@ def worst(statuses: list[str]) -> str:
 
 @dataclass
 class Outcome:
-    """一条检查项的求值结果。"""
+    """一条检查项的求值结果。
+
+    splits 用于「一条规则实际产生了多个检查项」的情形：
+    等级类规则逐交通工具类型判断、阈值类规则可能落到旺季限额，
+    这些在覆盖率统计里应当是各自独立的格子，不能合并成一个。
+    """
     status: str
     observed: dict = field(default_factory=dict)
     message: str = ""
+    splits: dict[str, "Outcome"] | None = None
 
     def grade(self) -> str:
         """把结果换成规则里 on_pass / on_fail 的取值。"""
@@ -105,9 +111,32 @@ def check_threshold(rule: Rule, claim: Claim) -> Outcome:
             rule.raw.get("on_fail", "不通过"),
             {"nights": details, "offenders": offenders},
             "；".join(parts),
+            splits=_split_by_limit(details, rule.raw.get("on_fail", "不通过")),
         )
 
-    return Outcome("通过", {"nights": details}, f"{len(details)} 晚均未超过限额")
+    return Outcome(
+        "通过", {"nights": details}, f"{len(details)} 晚均未超过限额",
+        splits=_split_by_limit(details, "通过"),
+    )
+
+
+def _split_by_limit(details: list[dict], fail_status: str) -> dict[str, Outcome]:
+    """按 base / peak 拆成检查项。每个分项要带上自己的违规晚次，
+    否则报告里只剩「有 2 笔超标」，看不出是哪一晚、按哪档限额超的。"""
+    out: dict[str, Outcome] = {}
+    for kind in {d["limit_kind"] for d in details}:
+        same = [d for d in details if d["limit_kind"] == kind]
+        bad = [d for d in same if d["amount"] > d["limit"]]
+        if bad:
+            msg = "；".join(
+                f"{d['date'] or '未标日期'} 晚 {d['amount']} 元超过 "
+                f"{'旺季' if kind == 'peak' else ''}限额 {d['limit']} 元"
+                for d in bad
+            )
+            out[kind] = Outcome(fail_status, {"nights": same, "offenders": bad}, msg)
+        else:
+            out[kind] = Outcome("通过", {"nights": same}, f"{len(same)} 晚未超过限额")
+    return out
 
 
 def _in_peak(item: Any, peak: dict, city: str | None) -> bool:
@@ -190,8 +219,10 @@ def check_ordinal(rule: Rule, claim: Claim) -> Outcome:
     max_rank = check["max_rank_by_person_level"]
     excluded = set(check.get("excluded_classes") or [])
 
-    violations = []
+    violations: list[dict] = []
     checked = 0
+    by_type: dict[str, list[dict]] = {}
+    missing_reason = ""
 
     for line in claim.expense_lines():
         if line.get("category") != "城市间交通费":
@@ -203,6 +234,7 @@ def check_ordinal(rule: Rule, claim: Claim) -> Outcome:
 
         if tclass in excluded:
             violations.append({"line": line.get("line_id"), "reason": f"{tclass} 属排除项"})
+            by_type.setdefault(ttype, []).append({"reason": f"{tclass} 属排除项"})
             continue
 
         table = ranks.get(ttype)
@@ -217,22 +249,37 @@ def check_ordinal(rule: Rule, claim: Claim) -> Outcome:
 
         checked += 1
         if table[tclass] > ceiling:
-            violations.append({
-                "line": line.get("line_id"),
-                "class": tclass,
-                "rank": table[tclass],
-                "ceiling": ceiling,
-            })
+            v = {"line": line.get("line_id"), "class": tclass,
+                 "rank": table[tclass], "ceiling": ceiling}
+            violations.append(v)
+            by_type.setdefault(ttype, []).append(v)
+        else:
+            by_type.setdefault(ttype, [])
 
     if violations:
+        splits = {
+            ttype: Outcome(
+                rule.raw.get("on_fail", "超支自理"),
+                {"violations": vs},
+                "；".join(f"{v.get('class', v.get('reason'))} 超过 {level} 档上限" for v in vs),
+            )
+            for ttype, vs in by_type.items() if vs
+        }
+        for ttype, vs in by_type.items():
+            if not vs:
+                splits[ttype] = Outcome("通过", {}, f"「{ttype}」席别符合 {level} 档标准")
         return Outcome(
             rule.raw.get("on_fail", "超支自理"),
             {"violations": violations},
             f"{len(violations)} 笔席别超标，超支部分由个人自理",
+            splits=splits,
         )
     if checked == 0:
         return _missing("本单没有城市间交通费，无法判断")
-    return Outcome("通过", {"checked": checked}, f"{checked} 笔交通费席别符合级别标准")
+    return Outcome(
+        "通过", {"checked": checked}, f"{checked} 笔交通费席别符合级别标准",
+        splits={ttype: Outcome("通过", {}, f"「{ttype}」席别符合 {level} 档标准") for ttype in by_type},
+    )
 
 
 # ---------------------------------------------------------------- 合计类

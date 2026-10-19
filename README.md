@@ -74,6 +74,11 @@ PYTHONPATH=src python -m claimcheck check <claim.json> --as-of 2013-06-01   # �
 PYTHONPATH=src python -m claimcheck check <claim.json> --db runs.db --save  # 结果写库
 PYTHONPATH=src python -m claimcheck items                                   # 列出全部检查项
 
+# --- 规则库诊断 ---
+PYTHONPATH=src python -m claimcheck diagnose                               # 打印报告
+PYTHONPATH=src python -m claimcheck diagnose --out docs/diagnosis-report.md
+PYTHONPATH=src python -m claimcheck diagnose --strict                      # 有问题则退出码非零，可作 CI 门禁
+
 # --- 测试 ---
 PYTHONPATH=src python -m pytest -q
 ```
@@ -128,14 +133,20 @@ conda activate travel-claim-rules
   - 引擎 6 个模块 + 命令行；55 个测试全绿；4 个样例与手工推导逐条对上
   - 2006 版 3 条对比规则，用 `--as-of` 做跨版本复核
   - SQLite 结果库 + 8 条实际会用的查询
-- [ ] 规则库质量诊断（第 3 周）
-- [ ] 制度问答与引用校验
-- [ ] 评测集与消融实验
+- [x] **第 3 周：规则库质量诊断**
+  - 缺口、冲突（分两级）、无效规则、覆盖度四项检查
+  - **两处真实冲突全部自动发现**：房型（确定）、会议市内交通（疑似）
+  - 验证方式是把 `conflict_with` 全删掉再跑，仍能发现——不依赖人工标注
+  - 覆盖率从 40% 提到 97%，剩余 3 个空洞有明确出处（G-005）
+- [ ] 制度问答与引用校验（第 4 周）
+- [ ] 评测集与消融实验（第 5 周）
 
 ## 已知的真实冲突（诊断层的验收用例）
 
 531 号第十三条规定「部级住普通套间，司局级及以下住单间或标准间」；
 而 497 号第三条明确写「自行选择宾馆住宿（**不分房型**）」。两条都现行有效。
 
-**第 3 周的诊断层必须能自动报出这处冲突**——跑完没有报，就说明一致性检查有漏。
+**诊断层已能自动报出这处冲突。** 验证方式是：把规则里所有 `conflict_with` 删掉再跑，
+它仍然能发现——说明检测靠的是判断，不是复述人工标注。
+完整结果见 [`docs/diagnosis-report.md`](docs/diagnosis-report.md)。
 详见 [`docs/ambiguity-log.md`](docs/ambiguity-log.md) A-012。
