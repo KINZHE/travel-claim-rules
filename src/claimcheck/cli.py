@@ -105,6 +105,64 @@ def cmd_diagnose(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ask(args: argparse.Namespace) -> int:
+    from .qa import QA
+
+    qa = QA()
+    answer = qa.ask(args.question, context_mode=args.context, as_of=args.as_of,
+                    top_k=args.top_k)
+
+    if args.json:
+        payload = {
+            "question": answer.question,
+            "route": answer.route,
+            "refusal": answer.refusal,
+            "answer": answer.text,
+            "citations": [
+                {"label": c.label, "kind": c.kind, "text": c.text}
+                for c in answer.citations
+            ],
+            "verification": answer.verification.to_dict() if answer.verification else None,
+            "trace": answer.trace,
+        }
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print(f"问：{answer.question}")
+    print("=" * 68)
+    print(answer.text or "（无内容）")
+    print()
+
+    if answer.citations:
+        print("依据：")
+        for cite in answer.citations:
+            mark = {"clause": "条款", "table": "表格", "secondary": "二手"}.get(cite.kind, "")
+            print(f"  [{mark}] {cite.label}")
+            print(f"        {cite.text[:100]}{'…' if len(cite.text) > 100 else ''}")
+        print()
+
+    v = answer.verification
+    if v is not None:
+        print(f"校验：{'通过' if v.passed else '未通过'}")
+        for problem in v.problems:
+            print(f"  × {problem}")
+        for warning in v.warnings:
+            print(f"  ! {warning}")
+    elif answer.refused:
+        print(f"拒答：{answer.refusal}")
+
+    print()
+    print("路径：" + answer.trace.get("route", "?"), end="")
+    if answer.trace.get("classification"):
+        print(f" | {answer.trace['classification']}", end="")
+    if answer.trace.get("rule_id"):
+        print(f" | 规则 {answer.trace['rule_id']}", end="")
+    if answer.trace.get("context_mode"):
+        print(f" | 上下文 {answer.trace['context_mode']}", end="")
+    print()
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -131,6 +189,15 @@ def main(argv: list[str] | None = None) -> int:
     p_diag.add_argument("--strict", action="store_true",
                         help="确定冲突、缺口、无法复现的声明存在时返回非零（用于 CI 门禁）")
     p_diag.set_defaults(func=cmd_diagnose)
+
+    p_ask = sub.add_parser("ask", help="就制度提问")
+    p_ask.add_argument("question", help="问题（用引号括起来）")
+    p_ask.add_argument("--context", choices=["retrieve", "full"], default="retrieve",
+                       help="上下文方式：检索片段 / 全量条文（第 5 周要对比两者）")
+    p_ask.add_argument("--as-of", help="按指定日期判断适用哪一版制度（YYYY-MM-DD）")
+    p_ask.add_argument("--top-k", type=int, default=3, help="检索返回条数")
+    p_ask.add_argument("--json", action="store_true", help="输出 JSON")
+    p_ask.set_defaults(func=cmd_ask)
 
     args = parser.parse_args(argv)
     return args.func(args)

@@ -11,6 +11,7 @@
 - id: R-LOCAL-ALLOWANCE-2006
   topic: 市内交通费
   kind: aggregate
+  display_name: 公杂费
   source:
     doc: 中央国家机关和事业单位差旅费管理办法
     doc_no: 财行〔2006〕313号

@@ -27,3 +27,6 @@ desktop.ini
 # 注意：sources/ 下的原始文件（HTML / XLS）**要提交**。
 # 它们是全部规则的依据来源，共约 220 KB，体积可接受，
 # 且丢掉就无法回溯。校验值与抓取记录见 sources/SOURCES.md。
+
+# 语料导出物：由 sources/ 解析生成，可随时重建，不入库
+data/corpus.jsonl

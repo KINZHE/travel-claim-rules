@@ -79,6 +79,13 @@ PYTHONPATH=src python -m claimcheck diagnose                               # 打
 PYTHONPATH=src python -m claimcheck diagnose --out docs/diagnosis-report.md
 PYTHONPATH=src python -m claimcheck diagnose --strict                      # 有问题则退出码非零，可作 CI 门禁
 
+# --- 制度问答 ---
+PYTHONPATH=src python -m claimcheck ask "南京出差，司局级，住宿最多能报多少？"
+PYTHONPATH=src python -m claimcheck ask "报销需要哪些凭证？"
+PYTHONPATH=src python -m claimcheck ask "市内交通费怎么算" --as-of 2013-06-01   # 按历史版本回答
+PYTHONPATH=src python -m claimcheck ask "..." --context full                    # 全量条文上下文
+PYTHONPATH=src python -m claimcheck ask "..." --json                            # 机器可读输出
+
 # --- 测试 ---
 PYTHONPATH=src python -m pytest -q
 ```
@@ -138,7 +145,12 @@ conda activate travel-claim-rules
   - **两处真实冲突全部自动发现**：房型（确定）、会议市内交通（疑似）
   - 验证方式是把 `conflict_with` 全删掉再跑，仍能发现——不依赖人工标注
   - 覆盖率从 40% 提到 97%，剩余 3 个空洞有明确出处（G-005）
-- [ ] 制度问答与引用校验（第 4 周）
+- [x] **第 4 周：制度问答与引用校验**
+  - 三类问题三条路径：可计算（走规则引擎）/ 需读条文（检索 + 逐字引用）/ 制度未覆盖（拒答）
+  - 语料按条切分，带版本元数据；检索用字符二元组 + BM25，版本过滤在检索阶段完成
+  - 三层确定性校验：引用存在、数字可溯、断言有据
+  - 抽取式生成器做基线；LLM 层只留接口与约束，未实现（没有 key，测不了就不写）
+  - `--context retrieve|full` 两种上下文方式，供第 5 周对比
 - [ ] 评测集与消融实验（第 5 周）
 
 ## 已知的真实冲突（诊断层的验收用例）
