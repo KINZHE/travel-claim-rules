@@ -5,6 +5,7 @@
 
 - id: R-REIMBURSE-UNIT-SCOPE
   topic: 报销管理
+  kind: enum
   source:
     doc: 中央和国家机关差旅费管理办法
     doc_no: 财行〔2013〕531号
@@ -17,22 +18,28 @@
   scope: {}
   when: {}
   require: [applicant.unit_type]
-  assert:
+  check:
+    kind: enum
     field: applicant.unit_type
     allowed: [中央单位, 参照公务员法管理的事业单位, 其他事业单位]
+    # 在允许集合内、但需要人工确认的取值：其他事业单位是「参照执行」，
+    # 可能另有本单位细则，不能直接按本办法判通过。
+    review_values: [其他事业单位]
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
   on_review: 需人工确认
   notes: >
     准入校验，不是费用规则。中央单位与参照公务员法管理的事业单位强制适用；
-    其他事业单位是「参照执行」（第三十一条），可能另有本单位细则，所以判需人工而不是直接套用。
+    其他事业单位是「参照执行」（第三十一条），可能另有本单位细则，
+    因此虽然取值合法，仍标为需人工确认（review_values），不直接判通过。
     2006 版第二条把全部事业单位都纳入强制适用（version-history 差异 10）。
     统计覆盖率时不应与费用类规则混在一起——这是两件性质不同的事。
   decision: D-009
 
 - id: R-REIMBURSE-OUTSIDE-STATION
   topic: 报销管理
+  kind: predicate
   source:
     doc: 中央和国家机关差旅费管理办法
     doc_no: 财行〔2013〕531号
@@ -45,8 +52,12 @@
   scope: {}
   when: {}
   require: [trip.origin_city, trip.destination_city]
-  assert:
-    condition: "trip.destination_city != trip.origin_city"
+  check:
+    kind: predicate
+    expr:
+      field: trip.destination_city
+      op: ne
+      field_ref: trip.origin_city
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
@@ -57,6 +68,7 @@
 
 - id: R-REIMBURSE-APPROVAL
   topic: 报销管理
+  kind: predicate
   source:
     doc: 中央和国家机关差旅费管理办法
     doc_no: 财行〔2013〕531号
@@ -69,9 +81,12 @@
   scope: {}
   when: {}
   require: [trip.approved]
-  assert:
-    field: trip.approved
-    equals: true
+  check:
+    kind: predicate
+    expr:
+      field: trip.approved
+      op: eq
+      value: true
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
@@ -82,6 +97,7 @@
 
 - id: R-REIMBURSE-VOUCHER
   topic: 报销管理
+  kind: predicate
   source:
     doc: 中央和国家机关差旅费管理办法
     doc_no: 财行〔2013〕531号
@@ -93,19 +109,27 @@
   effective_to: null
   scope: {}
   when: {}
-  require: [trip.approved, expense_lines, lodging.stay_occurred]
-  assert:
-    condition: "voucher_complete"
-    voucher_requirements:
-      - 出差审批单
-      - 机票或车票（城市间交通费发生时）
-      - 住宿费发票（住宿发生时）
+  require: [trip.approved, expense_lines, lodging.nights]
+  check:
+    kind: predicate
+    expr:
+      all:
+        - {field: trip.approved, op: eq, value: true}
+        - for_all:
+            path: lodging.nights
+            test: {field: receipt_present, op: eq, value: true}
+        - for_all:
+            path: expense_lines
+            where: {field: category, op: eq, value: 城市间交通费}
+            test: {field: receipt_present, op: eq, value: true}
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
   notes: >
     「出差审批单、机票、车票、住宿费发票等凭证」末尾有个「等」——是开放列表。
-    规则只检查前三项明确列举的，其余允许申请人补充说明，
+    规则只检查明确列举的三项，其余允许申请人补充说明，
     不能因为不在清单里就判「缺材料」。这是把自然语言列举写成程序规则的常见陷阱（D-012）。
     「及时办理报销」没有时限数字，本规则不涉及。
+    住宿发票的核查与 R-LODGING-NO-INVOICE 有重叠——这是有意的，
+    一条是凭证完整性，一条是费用后果，两者口径不同（见 D-008 关于重叠与冲突的区别）。
   decision: D-012

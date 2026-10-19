@@ -31,12 +31,16 @@
   when:
     category: 住宿费
   require: [lodging.nights, trip.destination_city, applicant.person_level]
-  limits:
-    - kind: base
-      by_person_level:
-        部级: 1100
-        司局级: 650
-        其他人员: 500
+  kind: threshold
+  check:
+    kind: threshold
+    field: lodging.nights[].amount
+    limits:
+      - kind: base
+        by_person_level:
+          部级: 1100
+          司局级: 650
+          其他人员: 500
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
@@ -65,19 +69,23 @@
   when:
     category: 住宿费
   require: [lodging.nights, trip.destination_city, applicant.person_level]
-  limits:
-    - kind: base
-      by_person_level:
-        部级: 800
-        司局级: 450
-        其他人员: 350
-    - kind: peak
-      months: [7, 8, 9]
-      applies_to_cities: [哈尔滨市]
-      by_person_level:
-        部级: 960
-        司局级: 540
-        其他人员: 420
+  kind: threshold
+  check:
+    kind: threshold
+    field: lodging.nights[].amount
+    limits:
+      - kind: base
+        by_person_level:
+          部级: 800
+          司局级: 450
+          其他人员: 350
+      - kind: peak
+        months: [7, 8, 9]
+        applies_to_cities: [哈尔滨市]
+        by_person_level:
+          部级: 960
+          司局级: 540
+          其他人员: 420
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
@@ -107,19 +115,23 @@
   when:
     category: 住宿费
   require: [lodging.nights, trip.destination_city, applicant.person_level]
-  limits:
-    - kind: base
-      by_person_level:
-        部级: 750
-        司局级: 450
-        其他人员: 300
-    - kind: peak
-      months: [6, 7, 8]
-      applies_to_cities: [牡丹江市, 伊春市, 大兴安岭地区, 黑河市, 佳木斯市]
-      by_person_level:
-        部级: 900
-        司局级: 540
-        其他人员: 360
+  kind: threshold
+  check:
+    kind: threshold
+    field: lodging.nights[].amount
+    limits:
+      - kind: base
+        by_person_level:
+          部级: 750
+          司局级: 450
+          其他人员: 300
+      - kind: peak
+        months: [6, 7, 8]
+        applies_to_cities: [牡丹江市, 伊春市, 大兴安岭地区, 黑河市, 佳木斯市]
+        by_person_level:
+          部级: 900
+          司局级: 540
+          其他人员: 360
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
@@ -148,12 +160,16 @@
   when:
     category: 住宿费
   require: [lodging.nights, trip.destination_city, applicant.person_level]
-  limits:
-    - kind: base
-      by_person_level:
-        部级: 1100
-        司局级: 600
-        其他人员: 500
+  kind: threshold
+  check:
+    kind: threshold
+    field: lodging.nights[].amount
+    limits:
+      - kind: base
+        by_person_level:
+          部级: 1100
+          司局级: 600
+          其他人员: 500
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
@@ -180,12 +196,16 @@
   when:
     category: 住宿费
   require: [lodging.nights, trip.destination_city, applicant.person_level]
-  limits:
-    - kind: base
-      by_person_level:
-        部级: 900
-        司局级: 490
-        其他人员: 380
+  kind: threshold
+  check:
+    kind: threshold
+    field: lodging.nights[].amount
+    limits:
+      - kind: base
+        by_person_level:
+          部级: 900
+          司局级: 490
+          其他人员: 380
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
@@ -212,12 +232,16 @@
   when:
     category: 住宿费
   require: [lodging.nights, trip.destination_city, applicant.person_level]
-  limits:
-    - kind: base
-      by_person_level:
-        部级: 900
-        司局级: 490
-        其他人员: 360
+  kind: threshold
+  check:
+    kind: threshold
+    field: lodging.nights[].amount
+    limits:
+      - kind: base
+        by_person_level:
+          部级: 900
+          司局级: 490
+          其他人员: 360
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
@@ -246,12 +270,16 @@
   when:
     category: 住宿费
   require: [lodging.nights, trip.destination_city, applicant.person_level]
-  limits:
-    - kind: base
-      by_person_level:
-        部级: 900
-        司局级: 550
-        其他人员: 450
+  kind: threshold
+  check:
+    kind: threshold
+    field: lodging.nights[].amount
+    limits:
+      - kind: base
+        by_person_level:
+          部级: 900
+          司局级: 550
+          其他人员: 450
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
@@ -278,12 +306,16 @@
   when:
     category: 住宿费
   require: [lodging.nights, trip.destination_city, applicant.person_level]
-  limits:
-    - kind: base
-      by_person_level:
-        部级: 850
-        司局级: 530
-        其他人员: 420
+  kind: threshold
+  check:
+    kind: threshold
+    field: lodging.nights[].amount
+    limits:
+      - kind: base
+        by_person_level:
+          部级: 850
+          司局级: 530
+          其他人员: 420
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
@@ -310,12 +342,16 @@
   when:
     category: 住宿费
   require: [lodging.nights, trip.destination_city, applicant.person_level]
-  limits:
-    - kind: base
-      by_person_level:
-        部级: 900
-        司局级: 470
-        其他人员: 370
+  kind: threshold
+  check:
+    kind: threshold
+    field: lodging.nights[].amount
+    limits:
+      - kind: base
+        by_person_level:
+          部级: 900
+          司局级: 470
+          其他人员: 370
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
@@ -342,12 +378,16 @@
   when:
     category: 住宿费
   require: [lodging.nights, trip.destination_city, applicant.person_level]
-  limits:
-    - kind: base
-      by_person_level:
-        部级: 800
-        司局级: 430
-        其他人员: 330
+  kind: threshold
+  check:
+    kind: threshold
+    field: lodging.nights[].amount
+    limits:
+      - kind: base
+        by_person_level:
+          部级: 800
+          司局级: 430
+          其他人员: 330
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
@@ -374,12 +414,16 @@
   when:
     category: 住宿费
   require: [lodging.nights, trip.destination_city, applicant.person_level]
-  limits:
-    - kind: base
-      by_person_level:
-        部级: 800
-        司局级: 430
-        其他人员: 320
+  kind: threshold
+  check:
+    kind: threshold
+    field: lodging.nights[].amount
+    limits:
+      - kind: base
+        by_person_level:
+          部级: 800
+          司局级: 430
+          其他人员: 320
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
@@ -406,12 +450,16 @@
   when:
     category: 住宿费
   require: [lodging.nights, trip.destination_city, applicant.person_level]
-  limits:
-    - kind: base
-      by_person_level:
-        部级: 800
-        司局级: 430
-        其他人员: 300
+  kind: threshold
+  check:
+    kind: threshold
+    field: lodging.nights[].amount
+    limits:
+      - kind: base
+        by_person_level:
+          部级: 800
+          司局级: 430
+          其他人员: 300
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
@@ -441,12 +489,16 @@
   when:
     category: 住宿费
   require: [lodging.nights, trip.destination_city, applicant.person_level]
-  limits:
-    - kind: base
-      by_person_level:
-        部级: 750
-        司局级: 430
-        其他人员: 330
+  kind: threshold
+  check:
+    kind: threshold
+    field: lodging.nights[].amount
+    limits:
+      - kind: base
+        by_person_level:
+          部级: 750
+          司局级: 430
+          其他人员: 330
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
@@ -473,12 +525,16 @@
   when:
     category: 住宿费
   require: [lodging.nights, trip.destination_city, applicant.person_level]
-  limits:
-    - kind: base
-      by_person_level:
-        部级: 750
-        司局级: 430
-        其他人员: 310
+  kind: threshold
+  check:
+    kind: threshold
+    field: lodging.nights[].amount
+    limits:
+      - kind: base
+        by_person_level:
+          部级: 750
+          司局级: 430
+          其他人员: 310
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
@@ -505,12 +561,16 @@
   when:
     category: 住宿费
   require: [lodging.nights, trip.destination_city, applicant.person_level]
-  limits:
-    - kind: base
-      by_person_level:
-        部级: 750
-        司局级: 430
-        其他人员: 300
+  kind: threshold
+  check:
+    kind: threshold
+    field: lodging.nights[].amount
+    limits:
+      - kind: base
+        by_person_level:
+          部级: 750
+          司局级: 430
+          其他人员: 300
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足

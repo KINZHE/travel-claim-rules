@@ -5,6 +5,7 @@
 
 - id: R-LOCAL-ALLOWANCE
   topic: 市内交通费
+  kind: aggregate
   source:
     doc: 中央和国家机关差旅费管理办法
     doc_no: 财行〔2013〕531号
@@ -19,10 +20,12 @@
     category: 市内交通费
     fee_type: 包干
   require: [trip.departure_date, trip.return_date]
-  assert:
-    field: expense_lines[].amount
-    op: "=="
-    expected: "travel_days * 80"
+  check:
+    kind: aggregate
+    category: 市内交通费
+    multiplier: travel_days
+    rate:
+      default: 80
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
@@ -36,6 +39,7 @@
 
 - id: R-LOCAL-HOST-TRANSPORT
   topic: 市内交通费
+  kind: predicate
   source:
     doc: 中央和国家机关差旅费管理办法
     doc_no: 财行〔2013〕531号
@@ -56,11 +60,22 @@
   when:
     category: 市内交通费
     fee_type: 接待单位交费
+    field: host.transport_provided
+    equals: true
   require: [host.transport_provided, host.transport_has_standard, host.transport_half_days, host.transport_fee_paid]
-  assert:
-    rule:
-      有收费标准: "host.transport_fee_paid <= min(收费标准, 80)"
-      无收费标准: "host.transport_fee_paid == 80 * 0.5 * host.transport_half_days"
+  check:
+    kind: predicate
+    expr:
+      any:
+        # 有收费标准：按标准交纳，最高不超过日市内交通费标准
+        - all:
+            - {field: host.transport_has_standard, op: eq, value: true}
+            - {field: host.transport_fee_paid, op: lte, field_ref: host.transport_standard_rate}
+            - {field: host.transport_fee_paid, op: lte, value: 80}
+        # 无收费标准：每人每半天按日标准的 50% 交纳
+        - all:
+            - {field: host.transport_has_standard, op: eq, value: false}
+            - {field: host.transport_fee_paid, op: eq, field_ref: expected_host_transport_fee}
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
@@ -68,10 +83,13 @@
     与 2006 版第十六条的机制完全不同：旧版是「免费提供交通工具 → 公杂费减半」，
     新版是「提供交通工具 → 向对方交费」，而且新版不会因此少拿市内交通费
     （version-history 差异 5）。按旧版逻辑实现会算错。
+    「无收费标准」分支用派生值 expected_host_transport_fee（= 40 × 半天数），
+    规则里不写公式字符串，避免重新引入无法枚举的自由文本（D-019）。
   decision: D-010
 
 - id: R-LOCAL-MEETING-SCOPE
   topic: 市内交通费
+  kind: predicate
   source:
     doc: 中央和国家机关差旅费管理办法
     doc_no: 财行〔2013〕531号
@@ -85,8 +103,13 @@
   when:
     category: 市内交通费
   require: [trip.trip_purpose_type, host.meeting_arranged_accommodation]
-  assert:
-    condition: "not (trip.trip_purpose_type in {学术会议, 培训} and host.meeting_arranged_accommodation)"
+  check:
+    kind: predicate
+    expr:
+      not:
+        all:
+          - {field: trip.trip_purpose_type, op: in, value: [学术会议, 培训]}
+          - {field: host.meeting_arranged_accommodation, op: eq, value: true}
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足

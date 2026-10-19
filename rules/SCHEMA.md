@@ -24,6 +24,7 @@
 | `meals.yaml` | 伙食补助费 | 2 |
 | `local-transport.yaml` | 市内交通费 | 3 |
 | `reimburse.yaml` | 准入与凭证 | 4 |
+| `version-2006.yaml` | 2006 版对比规则（只用于历史复核与演示） | 3 |
 
 ## 二、字段定义
 
@@ -77,7 +78,64 @@
 | `on_conflict` | 与 `conflict_with` 配对，命中冲突时输出 `需人工确认` |
 | `notes` | 这条规则的说明与已知边界 |
 
-### 2.5 五种结果
+### 2.5 检查类型（`kind` + `check`）
+
+每条规则必须声明 `kind`，引擎据此分派求值器。**不用通用表达式语言**，因为五类判断的对象不同，
+硬套一种写法会让每类都别扭，而且自由文本无法被静态检查、无法枚举（D-018、D-019）。
+
+| `kind` | 判断对象 | check 里的关键字段 | 检查项展开维度 |
+| --- | --- | --- | --- |
+| `threshold` | 某个数值不超上限 | `field`、`limits[].by_person_level` | `person_level` ×（旺季） |
+| `enum` | 取值属于允许集合 | `field`、`allowed` 或 `allowed_by_person_level`、`review_values` | `person_level` |
+| `ordinal` | 等级序数不超上限 | `field`、`type_field`、`ranks`、`max_rank_by_person_level` | `person_level` × `transport_type` |
+| `aggregate` | 某类费用合计等于「天数 × 标准」 | `category`、`multiplier`、`rate` | 区域档 |
+| `predicate` | 通用布尔组合 | `expr`（AST） | 无，恒为 1 个 |
+
+**`field` 里的 `[]`** 表示「对数组每一项取该字段」。例如 `lodging.nights[].amount` 是逐晚检查。
+
+#### predicate 的谓词语法
+
+```yaml
+check:
+  kind: predicate
+  expr:
+    not:
+      all:
+        - {field: lodging.stay_occurred, op: eq, value: true}
+        - exists:
+            path: lodging.nights
+            test: {field: receipt_present, op: eq, value: false}
+```
+
+| 节点 | 写法 | 说明 |
+| --- | --- | --- |
+| 比较 | `{field, op, value}` | op 取 `eq/ne/in/not_in/lt/lte/gt/gte/is_null/is_not_null` |
+| 比较（字段对字段） | `{field, op, field_ref}` | 与另一个字段比较，不写常量 |
+| 逻辑 | `{all: [...]}` / `{any: [...]}` / `{not: {...}}` | |
+| 量词 | `{for_all: {path, where?, test}}` / `{exists: {...}}` | `where` 先筛元素，`test` 再判；筛完为空时 for_all 为真、exists 为假 |
+
+**求值是三值的**（真 / 假 / 未知）。字段缺失、值为 null、类型不可比，都返回「未知」，
+不会默认成「假」。这条不改的话，任何缺字段的申请都会被误判成违规（D-020）。
+
+**不要在规则里写公式字符串**。像「无收费标准时按 0.5 × 80 × 半天数」这种计算，
+放进 `docs/claim-schema.md` 的派生值（`expected_host_transport_fee`），规则只引用这个名字。
+
+### 2.6 when 的前置条件
+
+`when` 除了 `category` / `fee_type`，还支持 `field` + `equals`（或 `in`），
+用来表达「本条只在某情形下适用」：
+
+```yaml
+when:
+  category: 伙食补助费
+  field: host.meal_arranged
+  equals: true
+```
+
+**没有它，不适用的情形会被误判成「信息不足」**。两者后果不同：不适用是跳过，
+信息不足是报了但判不了。
+
+### 2.7 五种结果
 
 | 取值 | 含义 |
 | --- | --- |
@@ -101,6 +159,7 @@
 ```yaml
 - id: R-LODGING-JS-CORE
   topic: 住宿费
+  kind: threshold
   source:
     doc: 中央和国家机关差旅费管理办法
     doc_no: 财行〔2013〕531号
@@ -119,12 +178,15 @@
   when:
     category: 住宿费
   require: [lodging.nights, trip.destination_city, applicant.person_level]
-  limits:
-    - kind: base
-      by_person_level:
-        部级: 900
-        司局级: 490
-        其他人员: 380
+  check:
+    kind: threshold
+    field: lodging.nights[].amount
+    limits:
+      - kind: base
+        by_person_level:
+          部级: 900
+          司局级: 490
+          其他人员: 380
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足

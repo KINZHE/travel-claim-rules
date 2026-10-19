@@ -1,0 +1,82 @@
+{
+  "synthetic": true,
+  "note": "模拟数据。这一份按 2006 版标准填写，用于新旧两版对比。",
+  "scenario": "2013 年 6 月南京出差 3 天，金额按 2006 版标准填写（公杂费 30 元/天、伙食 50 元/天），住宿缺一晚发票",
+  "expected": "as-of 2013-06-01 时补贴类通过、缺发票只影响住宿费；as-of 2014-06-01 时补贴类全部不符、缺发票影响四项",
+
+  "claim_id": "SAMPLE-005",
+  "applicant": {
+    "person_level": "司局级",
+    "unit_type": "中央单位"
+  },
+  "trip": {
+    "origin_city": "北京",
+    "destination_province": "江苏",
+    "destination_city": "南京市",
+    "departure_date": "2013-06-03",
+    "return_date": "2013-06-05",
+    "approved": true,
+    "trip_purpose_type": "一般出差"
+  },
+  "lodging": {
+    "stay_occurred": true,
+    "nights": [
+      {
+        "date": "2013-06-03",
+        "amount": 400,
+        "room_type": "标准间",
+        "receipt_present": true,
+        "payment_method": "公务卡"
+      },
+      {
+        "date": "2013-06-04",
+        "amount": 400,
+        "room_type": "标准间",
+        "receipt_present": false,
+        "payment_method": "公务卡"
+      }
+    ]
+  },
+  "expense_lines": [
+    {
+      "line_id": "L1",
+      "category": "城市间交通费",
+      "fee_type": "客票",
+      "amount": 300,
+      "date": "2013-06-03",
+      "receipt_present": true,
+      "transport_type": "火车",
+      "transport_class": "二等座"
+    },
+    {
+      "line_id": "L2",
+      "category": "市内交通费",
+      "fee_type": "包干",
+      "amount": 90,
+      "receipt_present": true
+    },
+    {
+      "line_id": "L3",
+      "category": "伙食补助费",
+      "fee_type": "包干",
+      "amount": 150,
+      "receipt_present": true
+    }
+  ],
+  "host": {
+    "meal_arranged": false,
+    "meal_place_type": null,
+    "meal_place_has_standard": null,
+    "meal_place_standard": null,
+    "meal_fee_paid": null,
+    "transport_provided": false,
+    "transport_has_standard": null,
+    "transport_standard_rate": null,
+    "transport_half_days": null,
+    "transport_fee_paid": null,
+    "meeting_arranged_accommodation": false
+  },
+  "flags": {
+    "unit_insurance_purchased": false
+  }
+}

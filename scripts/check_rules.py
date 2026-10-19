@@ -130,6 +130,138 @@ def check_require_fields(rules: list[dict]) -> None:
                 err(f"{r['id']}: require 字段 `{field}` 未在 claim-schema.md 中定义")
 
 
+# ---------------------------------------------------------------- 检查 1b：kind 与 check 结构
+
+KNOWN_KINDS = {"threshold", "enum", "ordinal", "aggregate", "predicate"}
+VALID_OPS = {"eq", "ne", "in", "not_in", "lt", "lte", "gt", "gte", "is_null", "is_not_null"}
+LOGIC_NODES = {"all", "any", "not"}
+QUANT_NODES = {"for_all", "exists"}
+
+# 不是输入字段、但引擎会算出来的只读值。必须与 claim-schema.md 的「派生值」一节一致。
+DERIVED_FIELDS = {
+    "travel_days",
+    "daily_rate",
+    "per_trip_insurance_count",
+    "expected_host_transport_fee",
+}
+
+# 结构性的键：不是字段引用，是语法本身
+STRUCT_KEYS = {
+    "kind", "field", "op", "value", "all", "any", "not", "for_all", "exists",
+    "path", "where", "test", "expr", "field_ref", "expected", "allowed",
+    "allowed_by_person_level", "review_values",
+    "ranks", "max_rank_by_person_level", "excluded_classes", "type_field",
+    "category", "multiplier", "rate", "default", "map",
+    "limits", "by_person_level", "months", "applies_to_cities",
+}
+
+
+def walk_fields(node, out: set[str]) -> None:
+    """从 check 结构里收集所有被引用的字段名。"""
+    if isinstance(node, dict):
+        for key, val in node.items():
+            if key in {"field", "path", "field_ref", "multiplier", "type_field"} and isinstance(val, str):
+                out.add(val)
+            else:
+                walk_fields(val, out)
+    elif isinstance(node, list):
+        for item in node:
+            walk_fields(item, out)
+
+
+def check_kind_and_check_block(rules: list[dict]) -> None:
+    known = documented_fields() | DERIVED_FIELDS
+    for r in rules:
+        rid = r.get("id", "<无 id>")
+
+        # 先查字段引用：新旧格式都查一遍。旧格式用 assert，新格式用 check。
+        block = r.get("check") or r.get("assert") or {}
+        refs: set[str] = set()
+        walk_fields(block, refs)
+        for ref in sorted(refs):
+            last = ref.split(".")[-1].replace("[]", "")
+            if last not in known:
+                err(f"{rid}: 引用了未定义字段 `{ref}`")
+
+        kind = r.get("kind")
+        if kind not in KNOWN_KINDS:
+            err(f"{rid}: kind 必须是 {sorted(KNOWN_KINDS)} 之一，实际是 {kind!r}")
+            continue
+
+        if "assert" in r:
+            err(f"{rid}: 仍有旧的 assert 字段，应改为 check + kind（见 SCHEMA.md）")
+            continue
+
+        check = r.get("check")
+        if not isinstance(check, dict):
+            err(f"{rid}: 缺 check 块")
+            continue
+        if check.get("kind") != kind:
+            err(f"{rid}: 顶层 kind={kind!r} 与 check.kind={check.get('kind')!r} 不一致")
+
+        if "condition" in check:
+            err(f"{rid}: 仍有自由文本的 condition，必须迁移为结构化谓词")
+
+
+def check_predicate_ast(rules: list[dict]) -> None:
+    def validate(node, rid: str, path: str = "expr") -> None:
+        if not isinstance(node, dict):
+            err(f"{rid}: {path} 应为字典，实际是 {type(node).__name__}")
+            return
+        keys = set(node)
+        if keys & LOGIC_NODES:
+            node_key = (keys & LOGIC_NODES).pop()
+            if len(keys) != 1:
+                err(f"{rid}: {path} 的逻辑节点不应与其他键混用，实际键 {sorted(keys)}")
+            val = node[node_key]
+            if node_key == "not":
+                validate(val, rid, f"{path}.not")
+            elif not isinstance(val, list) or not val:
+                err(f"{rid}: {path}.{node_key} 应为非空列表")
+            else:
+                for i, sub in enumerate(val):
+                    validate(sub, rid, f"{path}.{node_key}[{i}]")
+            return
+        if keys & QUANT_NODES:
+            node_key = (keys & QUANT_NODES).pop()
+            body = node[node_key]
+            if not isinstance(body, dict):
+                err(f"{rid}: {path}.{node_key} 应为字典（含 path / test / where）")
+                return
+            if "path" not in body:
+                err(f"{rid}: {path}.{node_key} 缺 path")
+            if "test" not in body:
+                err(f"{rid}: {path}.{node_key} 缺 test")
+            else:
+                validate(body["test"], rid, f"{path}.{node_key}.test")
+            if "where" in body:
+                validate(body["where"], rid, f"{path}.{node_key}.where")
+            return
+        if "field" not in node:
+            err(f"{rid}: {path} 缺 field")
+            return
+        if "op" not in node:
+            err(f"{rid}: {path} 缺 op")
+            return
+        if node["op"] not in VALID_OPS:
+            err(f"{rid}: {path}.op = {node['op']!r} 不在允许集合内")
+        needs_value = node["op"] not in {"is_null", "is_not_null"}
+        if needs_value and "value" not in node and "field_ref" not in node:
+            err(f"{rid}: {path} 的 op={node['op']} 需要 value 或 field_ref")
+        if "expr" in node:
+            err(f"{rid}: {path} 使用了 expr 字符串，规则里不允许自由文本公式")
+
+    for r in rules:
+        if r.get("kind") != "predicate":
+            continue
+        check = r.get("check") or {}
+        if "expr" not in check:
+            err(f"{r['id']}: predicate 规则缺 check.expr")
+            continue
+        validate(check["expr"], r["id"])
+
+
+
 # ---------------------------------------------------------------- 检查 2
 
 def check_source_articles(rules: list[dict]) -> None:
@@ -187,14 +319,15 @@ def check_lodging_thresholds(rules: list[dict]) -> None:
     rows = load_csv()
     checked = 0
     for r in rules:
-        if r.get("topic") != "住宿费" or "limits" not in r:
+        limit_list = (r.get("check") or {}).get("limits")
+        if r.get("topic") != "住宿费" or not limit_list:
             continue
         row = find_row(r, rows)
         if row is None:
             err(f"{r['id']}: 在 lodging-subset.csv 中找不到对应行")
             continue
 
-        limits = {lim["kind"]: lim for lim in r["limits"]}
+        limits = {lim["kind"]: lim for lim in limit_list}
         base = limits.get("base")
         if not base:
             err(f"{r['id']}: 缺 base 限额")
@@ -279,6 +412,8 @@ def main() -> int:
 
     check_structure(rules)
     check_require_fields(rules)
+    check_kind_and_check_block(rules)
+    check_predicate_ast(rules)
     check_source_articles(rules)
     check_lodging_thresholds(rules)
 

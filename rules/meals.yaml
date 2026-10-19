@@ -6,6 +6,7 @@
 
 - id: R-MEALS-ALLOWANCE
   topic: 伙食补助费
+  kind: aggregate
   source:
     doc: 中央和国家机关差旅费管理办法
     doc_no: 财行〔2013〕531号
@@ -22,15 +23,14 @@
   when:
     category: 伙食补助费
   require: [trip.departure_date, trip.return_date, trip.destination_province]
-  assert:
-    field: expense_lines[].amount
-    op: "=="
-    expected: "travel_days * daily_rate"
-    daily_rate:
+  check:
+    kind: aggregate
+    category: 伙食补助费
+    multiplier: travel_days
+    rate:
+      field: trip.destination_province
       default: 100
-      西藏: 120
-      青海: 120
-      新疆: 120
+      map: {西藏: 120, 青海: 120, 新疆: 120}
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
@@ -43,6 +43,7 @@
 
 - id: R-MEALS-HOST-MEAL
   topic: 伙食补助费
+  kind: predicate
   source:
     doc: 中央和国家机关差旅费管理办法
     doc_no: 财行〔2013〕531号
@@ -62,19 +63,36 @@
   scope: {}
   when:
     category: 伙食补助费
+    field: host.meal_arranged
+    equals: true
   require: [host.meal_arranged, host.meal_place_type, host.meal_fee_paid]
-  assert:
-    expected: "expected_host_meal_fee"
-    rule:
-      单位内部食堂_有对外标准: host.meal_fee_paid == meal_place_standard
-      单位内部食堂_无对外标准: "host.meal_fee_paid == daily_rate * (0.2 * breakfast + 0.4 * lunch + 0.4 * dinner)"
-      宾馆饭店: host.meal_fee_paid == 餐饮服务单位收费标准
+  check:
+    kind: predicate
+    expr:
+      any:
+        # 内部食堂、有对外收费标准：按标准交纳
+        - all:
+            - {field: host.meal_place_type, op: eq, value: 单位内部食堂}
+            - {field: host.meal_place_has_standard, op: eq, value: true}
+            - {field: host.meal_fee_paid, op: lte, field_ref: host.meal_place_standard}
+        # 内部食堂、无对外收费标准：按日标准的 20% + 40% + 40% = 100% 交纳
+        - all:
+            - {field: host.meal_place_type, op: eq, value: 单位内部食堂}
+            - {field: host.meal_place_has_standard, op: eq, value: false}
+            - {field: host.meal_fee_paid, op: lte, field_ref: daily_rate}
+        # 宾馆饭店：标准由餐馆决定，本单无法核对 → 该分支求值为「未知」
+        - all:
+            - {field: host.meal_place_type, op: eq, value: 宾馆饭店}
+            - {field: host.meal_place_standard, op: gte, value: 0}
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足
   notes: >
     531 号第十八条只写「应当向接待单位交纳伙食费」，没有金额，单看无法计算。
     104 号把它补成可算的百分比：内部食堂无对外标准时，早餐按日标准的 20%，
-    午晚餐各 40%。这是「配套文件让模糊条款变可算」的典型例子（见 article-inventory 第十八条）。
-    注意：这是个人向接待单位交费，不是报销项，所以命中失败不影响报销金额，只影响合规提示。
+    午晚餐各 40%，合计正好等于日标准。
+    宾馆饭店情形没有可核对的标准（标准由商家定，申请里不携带），
+    最后一个分支在 meal_place_standard 为空时求值为「未知」，整体因此判信息不足——
+    这是有意的：宁可说判不了，也不假装核对过。
+    另：这是个人向接待单位交费，不是报销项，命中失败只影响合规提示。
   decision: D-010

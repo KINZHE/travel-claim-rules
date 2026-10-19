@@ -1,0 +1,111 @@
+# 2006 版规则（财行〔2006〕313 号）
+#
+# 只写 3 条，用途是版本对比，不进主流程——它们的 effective_to 是 2013-12-31，
+# 正常情况下只有 2013 年及以前的单据会命中。
+#
+# 为什么只有 3 条：住宿费做不了版本对比。2006 版第九条只说「财政部根据各地经济发展水平
+# 和物价水平，分别确定各级别人员的住宿费开支标准上限」，**没有数值**。
+# 没有数值就没有可比的阈值，只能比条文结构——那不是演示，那是念文档。
+# 能演示的只有这三处有数值或语义差异的规定（见 docs/version-history.md 差异 1、2、4）。
+
+- id: R-LOCAL-ALLOWANCE-2006
+  topic: 市内交通费
+  kind: aggregate
+  source:
+    doc: 中央国家机关和事业单位差旅费管理办法
+    doc_no: 财行〔2006〕313号
+    article: 第十五条
+    url: http://gs.mof.gov.cn/xxgk/zhengcefagui/200911/t20091110_229778.htm
+    tier: A
+  version: "2006-313"
+  effective_from: "2007-01-01"
+  effective_to: "2013-12-31"
+  scope: {}
+  when:
+    category: 市内交通费
+  require: [trip.departure_date, trip.return_date]
+  check:
+    kind: aggregate
+    category: 市内交通费
+    multiplier: travel_days
+    rate:
+      default: 30
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: >
+    2006 版叫「公杂费」，30 元/天，用途是「补助市内交通、通讯等支出」；
+    2013 版改成「市内交通费」80 元/天，用途收窄为纯市内交通。
+    既是改名也是提价（version-history 差异 1）。
+    这里沿用「市内交通费」这个类别名，是为了让同一份申请能在两版之间直接对比；
+    真实业务里 2006 年的单据应填「公杂费」，那时本规则会因类别不匹配而不命中——
+    这本身也是差异 1 的一部分，见 sample-005 的说明。
+  decision: D-013
+
+- id: R-MEALS-ALLOWANCE-2006
+  topic: 伙食补助费
+  kind: aggregate
+  source:
+    doc: 中央国家机关和事业单位差旅费管理办法
+    doc_no: 财行〔2006〕313号
+    article: 第十三条
+    url: http://gs.mof.gov.cn/xxgk/zhengcefagui/200911/t20091110_229778.htm
+    tier: A
+  version: "2006-313"
+  effective_from: "2007-01-01"
+  effective_to: "2013-12-31"
+  scope: {}
+  when:
+    category: 伙食补助费
+  require: [trip.departure_date, trip.return_date]
+  check:
+    kind: aggregate
+    category: 伙食补助费
+    multiplier: travel_days
+    rate:
+      default: 50
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: >
+    2006 版第十三条规定「每人每天 50 元」，数字写在正文里；
+    2013 版第十六条改成「按规定标准包干」，具体数额移到附表（version-history 差异 4）。
+    这条最适合说明一件事：新版看起来更简洁，但**数字消失了**——
+    规则库要写它，只能另找附表，而那份附表至今没拿到 A 层级原件。
+  decision: D-010
+
+- id: R-LODGING-NO-INVOICE-2006
+  topic: 住宿费
+  kind: predicate
+  source:
+    doc: 中央国家机关和事业单位差旅费管理办法
+    doc_no: 财行〔2006〕313号
+    article: 第十二条
+    url: http://gs.mof.gov.cn/xxgk/zhengcefagui/200911/t20091110_229778.htm
+    tier: A
+  version: "2006-313"
+  effective_from: "2007-01-01"
+  effective_to: "2013-12-31"
+  scope: {}
+  when:
+    category: [住宿费]
+  require: [lodging.stay_occurred, lodging.nights]
+  check:
+    kind: predicate
+    expr:
+      not:
+        all:
+          - {field: lodging.stay_occurred, op: eq, value: true}
+          - exists:
+              path: lodging.nights
+              test: {field: receipt_present, op: eq, value: false}
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: >
+    2006 版第十二条：「出差人员无住宿费发票，一律不予报销住宿费。」
+    只影响住宿费一项。
+    2013 版第二十五条把后果扩大到住宿费、城市间交通费、伙食补助费、市内交通费四项，
+    并增加了「实际发生住宿」这个前置条件（version-history 差异 2）。
+    同一份缺发票的单据，两版下的损失范围差三倍——这是最容易讲清楚的一处版本差异。
+  decision: D-003

@@ -1,10 +1,11 @@
 # 住宿费的其他规定（非限额）
 #
-# 三条规则分别来自第二十四条、第二十五条和第十三条。
-# 其中 R-LODGING-ROOM-TYPE 与财行〔2015〕497 号第三条冲突，刻意保留（见 D-007）。
+# 三条来自第二十四条、第二十五条，一条来自第十三条。
+# R-LODGING-ROOM-TYPE 与财行〔2015〕497 号第三条冲突，刻意保留（D-007）。
 
 - id: R-LODGING-ROOM-TYPE
   topic: 住宿费
+  kind: enum
   source:
     doc: 中央和国家机关差旅费管理办法
     doc_no: 财行〔2013〕531号
@@ -18,7 +19,8 @@
   when:
     category: 住宿费
   require: [applicant.person_level, lodging.nights]
-  assert:
+  check:
+    kind: enum
     field: lodging.nights[].room_type
     allowed_by_person_level:
       部级: [普通套间]
@@ -31,12 +33,13 @@
   conflict_with: R-LODGING-ROOM-TYPE-SUPERSEDED
   notes: >
     本条与财行〔2015〕497 号第三条直接冲突：497 号写「自行选择宾馆住宿（不分房型）」，
-    两份文件都现行有效。按 D-007，不自行择一，命中即转人工。
-    这是第 3 周诊断层的验收用例之一：跑完若没报出这处冲突，说明一致性检查有漏。
+    两份文件都现行有效。按 D-007，不自行择一；两份规则都命中时比较结论，
+    分歧才转人工（见 rule-semantics 第二节）。这是第 3 周诊断层的验收用例之一。
   decision: D-007
 
 - id: R-LODGING-ROOM-TYPE-SUPERSEDED
   topic: 住宿费
+  kind: enum
   source:
     doc: 关于调整中央和国家机关差旅住宿费标准等有关问题的通知
     doc_no: 财行〔2015〕497号
@@ -50,7 +53,8 @@
   when:
     category: 住宿费
   require: [lodging.nights]
-  assert:
+  check:
+    kind: enum
     field: lodging.nights[].room_type
     allowed: any
   on_pass: 通过
@@ -64,6 +68,7 @@
 
 - id: R-LODGING-NO-INVOICE
   topic: 住宿费
+  kind: predicate
   source:
     doc: 中央和国家机关差旅费管理办法
     doc_no: 财行〔2013〕531号
@@ -77,8 +82,15 @@
   when:
     category: [住宿费, 城市间交通费, 伙食补助费, 市内交通费]
   require: [lodging.stay_occurred, lodging.nights]
-  assert:
-    condition: "not (lodging.stay_occurred and any(n.receipt_present == false for n in lodging.nights))"
+  check:
+    kind: predicate
+    expr:
+      not:
+        all:
+          - {field: lodging.stay_occurred, op: eq, value: true}
+          - exists:
+              path: lodging.nights
+              test: {field: receipt_present, op: eq, value: false}
   affects:
     - 住宿费
     - 城市间交通费
@@ -95,6 +107,7 @@
 
 - id: R-LODGING-PAYMENT-CARD
   topic: 住宿费
+  kind: enum
   source:
     doc: 中央和国家机关差旅费管理办法
     doc_no: 财行〔2013〕531号
@@ -108,9 +121,10 @@
   when:
     category: 住宿费
   require: [lodging.nights]
-  assert:
+  check:
+    kind: enum
     field: lodging.nights[].payment_method
-    equals: 公务卡
+    allowed: [公务卡]
   on_pass: 通过
   on_fail: 不通过
   on_missing: 信息不足

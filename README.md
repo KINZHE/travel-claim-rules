@@ -44,11 +44,13 @@
 ```
 travel-claim-rules/
 ├── sources/          制度原文存档 + 来源登记（SOURCES.md）
-├── docs/             条款清单、版本沿革、来源映射、歧义记录
+├── docs/             条款清单、版本沿革、来源映射、歧义记录、规则语义、取舍记录、SQL 查询
 ├── rules/            规则库（YAML），数字的唯一来源
-│   └── SCHEMA.md     字段定义与填写范例
-├── data/             从原始附件提取的干净数据集（含子集）
-├── scripts/          工具脚本
+│   └── SCHEMA.md     字段定义、五种检查类型、填写范例
+├── src/claimcheck/   引擎：模型、谓词、检查、匹配、编排、落库、命令行
+├── data/             干净数据集 + 模拟申请样例 + 手工推导的预期结果
+├── tests/            谓词、匹配、样例对账、规则契约、空输入
+├── scripts/          来源处理与规则自检
 └── environment.yml   环境定义
 ```
 
@@ -57,21 +59,27 @@ travel-claim-rules/
 ```bash
 conda activate travel-claim-rules
 
-# 网页 HTML 转纯文本（存档与核对用）
-python scripts/extract_text.py <输入.html> <输出.txt>
-
-# 把财政部明细表导出成可读文本与 CSV（两个工作表都导出，便于发现混入的内容）
+# --- 来源处理 ---
+python scripts/extract_text.py <输入.html> <输出.txt>          # 网页转纯文本
 python scripts/dump_lodging_table.py sources/2016-71/lodging-standards.xls sources/2016-71/extracted/
-
-# 提取本项目选定的地区子集（只读 Sheet1）
 python scripts/extract_lodging_subset.py sources/2016-71/lodging-standards.xls data/
 
-# 规则库自检：字段是否都在 claim-schema 里、条款是否真在原文、阈值是否与 CSV 一致
-python scripts/check_rules.py
+# --- 规则库维护 ---
+python scripts/check_rules.py            # 自检：字段、条款、阈值三条硬断言
+python scripts/gen_source_mapping.py     # 生成 docs/source-mapping.md（生成物，不要手改）
 
-# 由规则生成来源映射表（docs/source-mapping.md 是生成物，不要手改）
-python scripts/gen_source_mapping.py
+# --- 引擎 ---
+PYTHONPATH=src python -m claimcheck check data/samples/sample-002-over-limit.json
+PYTHONPATH=src python -m claimcheck check <claim.json> --as-of 2013-06-01   # 按历史版本判断
+PYTHONPATH=src python -m claimcheck check <claim.json> --db runs.db --save  # 结果写库
+PYTHONPATH=src python -m claimcheck items                                   # 列出全部检查项
+
+# --- 测试 ---
+PYTHONPATH=src python -m pytest -q
 ```
+
+> Windows 下如果直接 `python -m claimcheck` 找不到包，用 `PYTHONPATH=src` 前缀，
+> 或者在项目根目录执行 `pip install -e .`。
 
 ## 环境
 
@@ -115,9 +123,12 @@ conda activate travel-claim-rules
 - [x] 规则匹配与展开语义（`docs/rule-semantics.md`）
 - [x] **规则库第一版：31 条规则，约 60 个检查项**（住宿 19 / 交通 3 / 伙食 2 / 市内交通 3 / 报销准入 4）
 - [x] 规则自检脚本（三条断言，已用探针验证确实会失败）
-- [ ] 2006 版规则（第 2 周，只写 3 条用于版本对比）
-- [ ] 规则引擎（第 2 周）
-- [ ] 规则库质量诊断
+- [x] **第 2 周：规则语言改造 + 引擎 + 版本对比 + 结果落库**
+  - 规则从自由文本条件改为结构化谓词，五类检查按 `kind` 分派（D-018、D-019）
+  - 引擎 6 个模块 + 命令行；55 个测试全绿；4 个样例与手工推导逐条对上
+  - 2006 版 3 条对比规则，用 `--as-of` 做跨版本复核
+  - SQLite 结果库 + 8 条实际会用的查询
+- [ ] 规则库质量诊断（第 3 周）
 - [ ] 制度问答与引用校验
 - [ ] 评测集与消融实验
 
