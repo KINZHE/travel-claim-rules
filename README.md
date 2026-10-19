@@ -86,6 +86,12 @@ PYTHONPATH=src python -m claimcheck ask "市内交通费怎么算" --as-of 2013-
 PYTHONPATH=src python -m claimcheck ask "..." --context full                    # 全量条文上下文
 PYTHONPATH=src python -m claimcheck ask "..." --json                            # 机器可读输出
 
+# --- 评测 ---
+PYTHONPATH=src python -m claimcheck eval                    # 跑题，打印各指标
+PYTHONPATH=src python -m claimcheck eval --ablation         # 阶梯消融 L0–L3
+PYTHONPATH=src python -m claimcheck eval --out docs/eval-report.md
+python scripts/freeze_eval.py                                # 核对题目集是否被改动
+
 # --- 测试 ---
 PYTHONPATH=src python -m pytest -q
 ```
@@ -151,7 +157,12 @@ conda activate travel-claim-rules
   - 三层确定性校验：引用存在、数字可溯、断言有据
   - 抽取式生成器做基线；LLM 层只留接口与约束，未实现（没有 key，测不了就不写）
   - `--context retrieve|full` 两种上下文方式，供第 5 周对比
-- [ ] 评测集与消融实验（第 5 周）
+- [x] **第 5 周：评测集、阶梯消融与评测报告**
+  - 50 条题（可计算 22 / 需读条文 22 / 拒答 6，其中版本陷阱 6、口语问法 24 条）
+  - 指标带 Wilson 置信区间，按类型分开报，不报总分
+  - 阶梯消融：L0 基线 → L3 三类分类，答案正确率 30% → 72%
+  - **如实报告的负结果**：同义词那一级零提升；引用校验在抽取式下捕获率为 0
+  - 题目集已冻结（哈希见 `data/eval/FROZEN.md`），首次运行即结果
 
 ## 已知的真实冲突（诊断层的验收用例）
 

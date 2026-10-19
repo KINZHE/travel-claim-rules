@@ -1,0 +1,565 @@
+# 评测集：50 条
+#
+# 出题方法（见 docs/eval-design.md）：
+#   1. 从条文与规则**反向**构造，不从系统输出构造
+#   2. 每条必须有 basis —— 说清标准答案出自哪一条
+#   3. 一半用口语化改写，避免人为抬高模式匹配的准确率
+#
+# 字段说明：
+#   style: formal（正式）/ colloquial（口语）—— 两者比例要在 40%–60% 之间
+#   as_of: 判断适用哪一版制度的基准日
+#   expected.route: compute / retrieve / refuse
+#   expected.citations_any: 至少命中其中一条即算命中
+#   expected.facts: 答案正文里必须出现的字面内容
+#   expected.must_not_contain: 不能出现的内容（抓「档位答错」这类错）
+#   expected.refusal: 期望的拒答代码（仅 refuse 类）
+#   basis: 标准答案的出处 —— 不能为空
+
+- id: Q-001
+  question: 下个月去南京出差，我是司局级，住宿一天最多能报多少？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2016〕71号", article_contains: 江苏省}
+    facts: ["490"]
+    must_not_contain: ["1100", "650"]
+  basis: 71 号明细表江苏省第 1 行（南京市、苏州市、无锡市、常州市、镇江市），司局级 490 元/人·天
+
+- id: Q-002
+  question: 部级干部在北京出差，住宿费限额是多少？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2016〕71号", article_contains: 北京市}
+    facts: ["1100"]
+  basis: 71 号明细表北京市（全市），部级 1100 元/人·天
+
+- id: Q-003
+  question: 上海住宿标准，其他人员那一档多少钱？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2016〕71号", article_contains: 上海市}
+    facts: ["500"]
+  basis: 71 号明细表上海市（全市），其他人员 500 元/人·天
+
+- id: Q-004
+  question: 我去广州出差，处级，住宿能报多少？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2016〕71号", article_contains: 广东省}
+    facts: ["450"]
+  basis: 71 号明细表广东省第 1 行（含广州市），其他人员 450；「处级」按 2013 版口径归入「其他人员」
+
+- id: Q-005
+  question: 成都住宿费标准，司局级的上限是多少？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2016〕71号", article_contains: 四川省}
+    facts: ["470"]
+  basis: 71 号明细表四川省第 1 行（成都市），司局级 470 元/人·天
+
+- id: Q-006
+  question: 八月去哈尔滨出差，司局级，住宿一天最多报多少？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2016〕71号", article_contains: 黑龙江省}
+    facts: ["540"]
+    must_not_contain: ["450"]
+  basis: 71 号明细表黑龙江省第 1 行，哈尔滨 7-9 月旺季上浮，司局级 540；淡季为 450
+
+- id: Q-007
+  question: 十二月去哈尔滨，部级住宿限额多少？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2016〕71号", article_contains: 黑龙江省}
+    facts: ["800"]
+    must_not_contain: ["960"]
+  basis: 71 号明细表黑龙江省第 1 行，12 月不在旺季（7-9 月），适用常规限额部级 800
+
+- id: Q-008
+  question: 去宜宾出差，部级住宿标准是多少？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2016〕71号", article_contains: 四川省}
+    facts: ["800"]
+  basis: 71 号明细表四川省第 4 行（宜宾市），部级 800 元/人·天
+
+- id: Q-009
+  question: 凉山州出差，司局级住宿限额多少？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2016〕71号", article_contains: 四川省}
+    facts: ["430"]
+  basis: 71 号明细表四川省第 5 行（凉山州），司局级 430 元/人·天
+
+- id: Q-010
+  question: 去徐州出差，住宿费按什么标准算？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2016〕71号", article_contains: 江苏省}
+    facts: ["360"]
+    must_not_contain: ["380"]
+  basis: 徐州不在江苏重点城市名单内，适用江苏省第 2 行「其他地区」，其他人员 360；重点城市组是 380
+
+- id: Q-011
+  question: 黑龙江其他地区出差，其他人员住宿费多少？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2016〕71号", article_contains: 黑龙江省}
+    facts: ["300"]
+  basis: 71 号明细表黑龙江省第 2 行（其他地区），其他人员 300 元/人·天
+
+- id: Q-012
+  question: 阿坝州出差，其他人员住宿能报多少？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2016〕71号", article_contains: 四川省}
+    facts: ["330"]
+  basis: 71 号明细表四川省第 2 行（阿坝州、甘孜州），其他人员 330 元/人·天
+
+- id: Q-013
+  question: 佛山出差住宿标准，部级多少？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2016〕71号", article_contains: 广东省}
+    facts: ["900"]
+  basis: 71 号明细表广东省第 1 行（含佛山市），部级 900 元/人·天
+
+- id: Q-014
+  question: 广东其他城市，司局级住宿上限是多少？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2016〕71号", article_contains: 广东省}
+    facts: ["530"]
+    must_not_contain: ["550"]
+  basis: 71 号明细表广东省第 2 行（其他地区），司局级 530；重点城市组为 550
+
+- id: Q-015
+  question: 伙食补助费一天多少钱？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第十六条}
+    facts: ["100"]
+  basis: 531 号第十六、十七条 + 伙食补助费标准表，一般地区 100 元/人·天（B 级来源，见 G-003）
+
+- id: Q-016
+  question: 去西藏出差，伙食补助标准是多少？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第十六条}
+    facts: ["120"]
+  basis: 伙食补助费标准表：西藏适用 120 元/人·天
+
+- id: Q-017
+  question: 青海出差伙食补助一天多少？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第十六条}
+    facts: ["120"]
+  basis: 伙食补助费标准表：青海适用 120 元/人·天
+
+- id: Q-018
+  question: 新疆出差，伙食补助怎么算？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第十六条}
+    facts: ["120"]
+  basis: 伙食补助费标准表：新疆适用 120 元/人·天
+
+- id: Q-019
+  question: 市内交通费每天多少？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第二十条}
+    facts: ["80"]
+  basis: 531 号第二十条，市内交通费每人每天 80 元包干
+
+- id: Q-020
+  question: 市内交通费是怎么计算的？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第二十条}
+    facts: ["80", "天数"]
+  basis: 531 号第二十条：按出差自然（日历）天数计算，每人每天 80 元包干
+
+- id: Q-021
+  question: 报销需要准备哪些材料？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第二十四条}
+    facts: ["审批单"]
+  basis: 531 号第二十四条：应提供出差审批单、机票、车票、住宿费发票等凭证
+
+- id: Q-022
+  question: 住宿费和机票要用公务卡结算吗？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第二十四条}
+    facts: ["公务卡"]
+  basis: 531 号第二十四条：「住宿费、机票支出等按规定用公务卡结算」
+
+- id: Q-023
+  question: 什么情况下差旅费不予报销？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第二十五条}
+    facts: ["不予报销"]
+  basis: 531 号第二十五条：未经批准出差以及超范围、超标准开支的费用不予报销
+
+- id: Q-024
+  question: 出差期间的费用可以转给下级单位承担吗？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第二十二条}
+    facts: ["不得"]
+  basis: 531 号第二十二条：费用由所在单位承担，不得向下级单位、企业或其他单位转嫁
+
+- id: Q-025
+  question: 参加会议时，会议期间的食宿费由谁承担？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第三十条}
+    facts: ["举办单位"]
+  basis: 531 号第三十条：举办单位统一安排食宿的，会议培训期间的食宿费和市内交通费由举办单位统一开支
+
+- id: Q-026
+  question: 出差坐飞机，民航发展基金能报吗？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第九条}
+    facts: ["民航发展基金"]
+  basis: 531 号第九条：民航发展基金、燃油附加费可以凭据报销
+
+- id: Q-027
+  question: 交通意外保险能买几份？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第十条}
+    facts: ["一份"]
+  basis: 531 号第十条：每人次可以购买交通意外保险一份，单位统一购买的不再重复购买
+
+- id: Q-028
+  question: 司局级干部出差可以坐商务座吗？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第七条}
+    facts: ["一等座"]
+  basis: 531 号第七条等级表：司局级乘高铁/动车为一等座，商务座属部级标准
+
+- id: Q-029
+  question: 部级干部可以坐头等舱吗？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第七条}
+    facts: ["头等舱"]
+  basis: 531 号第七条等级表：部级及相当职务人员乘飞机可坐头等舱
+
+- id: Q-030
+  question: 招待所、饭店的住宿费能按住宿费报吗？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第十一条}
+    facts: ["宾馆"]
+  basis: 531 号第十一条：住宿费指入住宾馆（包括饭店、招待所）发生的房租费用
+
+- id: Q-031
+  question: 这个办法适用于哪些单位？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第二条}
+    facts: ["事业单位"]
+  basis: 531 号第二条：适用于中央和国家机关，以及参照公务员法管理的事业单位
+
+- id: Q-032
+  question: 同城办事产生的交通费能算差旅费吗？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第三条}
+    facts: ["常驻地"]
+  basis: 531 号第三条：差旅费是临时到常驻地以外地区公务出差发生的费用
+
+- id: Q-033
+  question: 接待单位安排用餐的，我需要交伙食费吗？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第十八条}
+    facts: ["交纳"]
+  basis: 531 号第十八条：凡由接待单位统一安排用餐的，应当向接待单位交纳伙食费
+
+- id: Q-034
+  question: 接待单位提供交通工具，费用怎么处理？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第二十一条}
+    facts: ["交纳"]
+  basis: 531 号第二十一条：由接待单位或其他单位提供交通工具的，应向接待单位或其他单位交纳相关费用
+
+- id: Q-035
+  question: 出差期间生病了，医疗费能报吗？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: refuse
+    refusal: NOT_COVERED
+  basis: 531 号第三条界定的差旅费为城市间交通费、住宿费、伙食补助费和市内交通费四类，不含医疗费
+
+- id: Q-036
+  question: 出差期间的手机话费可以报销吗？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: refuse
+    refusal: NOT_COVERED
+  basis: 2013 版取消了 2006 版的「公杂费（含通讯）」，四个法定类别中不含通讯费
+
+- id: Q-037
+  question: 出差期间顺便旅游的费用能报吗？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: refuse
+    refusal: NOT_COVERED
+  basis: 531 号第四条严禁变相旅游，但未规定旅游费用的报销口径——属禁止性规定，不是可报销项
+
+- id: Q-038
+  question: 给家人买机票一起出差，能报吗？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: refuse
+    refusal: NOT_COVERED
+  basis: 531 号无家属随行报销规定；2006 版第二十条的家属随迁条款在 2013 版已整章删除
+
+- id: Q-039
+  question: 出差补助需要缴纳个人所得税吗？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: refuse
+    refusal: NOT_COVERED
+  basis: 531 号全篇为差旅费管理规定，未涉及税务处理
+
+- id: Q-040
+  question: 实习生出差适用这个办法吗？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: refuse
+    refusal: NOT_COVERED
+  basis: 531 号第二、三十条界定的适用对象为中央单位工作人员，未规定实习生
+
+- id: Q-041
+  question: 2013 年出差，市内交通费每天多少？
+  style: formal
+  as_of: "2013-06-01"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2006〕313号", article: 第十五条}
+    facts: ["30"]
+    must_not_contain: ["80"]
+  basis: 2006 版第十五条：公杂费每人每天 30 元。2013 版第二十条改为市内交通费 80 元，2014-01-01 起施行
+
+- id: Q-042
+  question: 2013 年出差，伙食补助一天多少钱？
+  style: formal
+  as_of: "2013-06-01"
+  expected:
+    route: compute
+    citations_any:
+      - {doc_no: "财行〔2006〕313号", article: 第十三条}
+    facts: ["50"]
+    must_not_contain: ["100"]
+  basis: 2006 版第十三条：每人每天 50 元。2013 版改为「按规定标准包干」，标准移入附表
+
+- id: Q-043
+  question: 2012 年住宿没有发票，是只不报住宿费还是四项都不报？
+  style: colloquial
+  as_of: "2012-06-01"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2006〕313号", article: 第十二条}
+    facts: ["住宿费"]
+    must_not_contain: ["四项"]
+  basis: 2006 版第十二条：无住宿费发票一律不予报销住宿费（仅住宿费一项）；2013 版第二十五条才扩大到四项
+
+- id: Q-044
+  question: 2013 年公务出差，坐飞机需要领导批准吗？
+  style: formal
+  as_of: "2013-06-01"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2006〕313号", article: 第六条}
+    facts: ["批准"]
+  basis: 2006 版第六条（二）：出差人员乘坐飞机要从严控制，需经单位司局以上领导批准。2013 版取消该审批要求
+
+- id: Q-045
+  question: 2013 年出差，公杂费和其他补贴怎么算？
+  style: colloquial
+  as_of: "2013-06-01"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2006〕313号", article_contains: 第十五条}
+    facts: ["30"]
+    must_not_contain: ["80"]
+  basis: 2006 版第十五条公杂费 30 元/天。2013 版改称市内交通费 80 元/天
+
+- id: Q-046
+  question: 2013 年出差住宿有什么要求？
+  style: formal
+  as_of: "2013-06-01"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2006〕313号", article: 第十条}
+    facts: ["定点"]
+  basis: 2006 版第十条：中央国家机关工作人员出差实行定点住宿，须到定点饭店住宿。2013 版取消该制度
+
+- id: Q-047
+  question: 参加会议且举办方统一安排食宿，会议期间的市内交通费该怎么处理？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第三十条}
+    facts: ["举办单位"]
+  basis: 531 号第三十条规定会议期间市内交通费由举办单位开支；第二十条又规定按天包干——两条在会议期间冲突，见 ambiguity-log A-007
+
+- id: Q-048
+  question: 住宿发票丢了，住宿费和机票还能报吗？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第二十五条}
+    facts: ["不得报销"]
+  basis: 531 号第二十五条：实际发生住宿而无住宿费发票的，不得报销住宿费以及城市间交通费、伙食补助费和市内交通费
+
+- id: Q-049
+  question: 出差人员住宿房型有级别限制吗？
+  style: formal
+  as_of: "2026-10-19"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第十三条}
+      - {doc_no: "财行〔2015〕497号", article: 第三条}
+    facts: ["套间"]
+  basis: 531 号第十三条规定部级住普通套间；但 497 号第三条明确「不分房型」，两者冲突，见 ambiguity-log A-012
+
+- id: Q-050
+  question: 出差期间由接待单位安排了一顿工作餐，我需要交钱吗？交多少？
+  style: colloquial
+  as_of: "2026-10-19"
+  expected:
+    route: retrieve
+    citations_any:
+      - {doc_no: "财行〔2013〕531号", article: 第十八条}
+      - {doc_no: "财办行〔2019〕104号", article: 一、}
+    facts: ["交纳"]
+  basis: 531 号第十八条要求交纳伙食费；104 号第一条给出具体比例（内部食堂无对外标准时早餐 20%、午晚餐各 40%）

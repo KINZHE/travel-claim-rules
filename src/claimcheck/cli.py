@@ -163,6 +163,52 @@ def cmd_ask(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_eval(args: argparse.Namespace) -> int:
+    from .evaluate import load_questions, run_all, summarize, validate_questions, self_check
+    from .qa import QA
+
+    questions = load_questions()
+    problems = validate_questions(questions)
+    if problems:
+        print("题目集有问题：")
+        for p in problems:
+            print("  -", p)
+        return 1
+
+    if args.ablation:
+        from .ablation import run_ablation
+        rows = run_ablation(questions)
+        print(f"题目 {len(questions)} 条\n")
+        print(f"{'级别':4} {'路径':>6} {'答案':>6} {'引用召回':>8}  变更")
+        for row in rows:
+            s = row["stats"]
+            print(f"{row['level']:4} {s['route']['rate']:>6.0%} {s['answer']['rate']:>6.0%} "
+                  f"{s['citation_recall']['rate']:>8.0%}  {row['title']}")
+        return 0
+
+    if args.out:
+        from .evalreport import build_report
+        Path(args.out).write_text(build_report(questions), encoding="utf-8")
+        print(f"报告已写入 {args.out}")
+        return 0
+
+    qa = QA()
+    records = run_all(qa, questions)
+    issues = self_check(records, len(questions))
+    s = summarize(records)
+    print(f"题目 {len(questions)} 条")
+    for m in ("route", "answer", "citation_recall", "refusal", "verify", "version"):
+        d = s[m]
+        lo, hi = d["ci"]
+        print(f"  {m:16} {d['k']:2}/{d['n']} = {d['rate']:.0%}  95%CI {lo:.2f}–{hi:.2f}")
+    if issues:
+        print("\n自检未通过：")
+        for i in issues:
+            print("  -", i)
+        return 1
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -198,6 +244,11 @@ def main(argv: list[str] | None = None) -> int:
     p_ask.add_argument("--top-k", type=int, default=3, help="检索返回条数")
     p_ask.add_argument("--json", action="store_true", help="输出 JSON")
     p_ask.set_defaults(func=cmd_ask)
+
+    p_eval = sub.add_parser("eval", help="跑评测集")
+    p_eval.add_argument("--out", help="写入 Markdown 报告")
+    p_eval.add_argument("--ablation", action="store_true", help="只跑阶梯消融")
+    p_eval.set_defaults(func=cmd_eval)
 
     args = parser.parse_args(argv)
     return args.func(args)

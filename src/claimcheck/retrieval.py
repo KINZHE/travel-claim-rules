@@ -48,21 +48,27 @@ STOP_PHRASES = [
 ]
 
 
-def normalize(text: str) -> str:
-    """同义词替换 + 去停用短语 + 去标点空白。"""
+def normalize(text: str, use_synonyms: bool = True) -> str:
+    """同义词替换 + 去停用短语 + 去标点空白。
+
+    `use_synonyms=False` 只关掉同义词替换，停用短语与标点照旧处理——
+    这是消融实验用的开关：要隔离「同义词映射」这一项的贡献，
+    其余预处理必须保持不变。见 docs/eval-design.md。
+    """
     t = text
     for phrase in STOP_PHRASES:
         t = t.replace(phrase, "")
-    # 长词优先替换，避免「住宿费」先被「住宿」吃掉后剩个「费」
-    for src in sorted(SYNONYMS, key=len, reverse=True):
-        t = t.replace(src, SYNONYMS[src])
-    t = re.sub(r"[\s，。、？！：；（）()《》\[\]“”\"'.,?!:;-]+", "", t)
+    if use_synonyms:
+        # 长词优先替换，避免「住宿费」先被「住宿」吃掉后剩个「费」
+        for src in sorted(SYNONYMS, key=len, reverse=True):
+            t = t.replace(src, SYNONYMS[src])
+    t = re.sub(r"[\s，。、？！：；（）()《》\[\]“”\"'.,;?!:;-]+", "", t)
     return t
 
 
-def bigrams(text: str) -> list[str]:
+def bigrams(text: str, use_synonyms: bool = True) -> list[str]:
     """字符二元组。单字文本返回自身。"""
-    t = normalize(text)
+    t = normalize(text, use_synonyms=use_synonyms)
     if len(t) <= 1:
         return [t] if t else []
     return [t[i:i + 2] for i in range(len(t) - 1)]
@@ -78,14 +84,15 @@ class Hit:
 class Retriever:
     """倒排索引 + BM25。语料只有几十条，构建成本可以忽略。"""
 
-    def __init__(self, chunks: list[Chunk]):
+    def __init__(self, chunks: list[Chunk], use_synonyms: bool = True):
         self.chunks = chunks
+        self.use_synonyms = use_synonyms
         self._docs: list[Counter] = []
         self._lens: list[int] = []
         self._df: Counter = Counter()
 
         for chunk in chunks:
-            grams = bigrams(chunk.text)
+            grams = bigrams(chunk.text, use_synonyms=use_synonyms)
             counts = Counter(grams)
             self._docs.append(counts)
             self._lens.append(len(grams))
@@ -106,8 +113,11 @@ class Retriever:
 
         as_of：按这个日期过滤条文版本（默认不过滤，但调用方应当总是传）。
         version：直接指定版本号，优先于 as_of。
+
+        建索引和查询必须用同一个 `use_synonyms` 设置，否则二元组对不上，
+        检索会静默失效——所以它存在实例上，不放在 search 的参数里。
         """
-        q_grams = bigrams(query)
+        q_grams = bigrams(query, use_synonyms=self.use_synonyms)
         if not q_grams:
             return []
 
@@ -150,5 +160,5 @@ def _covers(chunk: Chunk, as_of: str) -> bool:
     return True
 
 
-def build_retriever(chunks: list[Chunk]) -> Retriever:
-    return Retriever(chunks)
+def build_retriever(chunks: list[Chunk], use_synonyms: bool = True) -> Retriever:
+    return Retriever(chunks, use_synonyms=use_synonyms)

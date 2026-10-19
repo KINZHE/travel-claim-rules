@@ -52,13 +52,28 @@ class QA:
                  corpus: list[Chunk] | None = None,
                  universe: Universe | None = None,
                  generator: Generator | None = None,
-                 lodging_rows: list[dict] | None = None):
+                 lodging_rows: list[dict] | None = None,
+                 route_mode: str = "auto",
+                 version_filter: bool = True,
+                 use_synonyms: bool = True,
+                 verify_answers: bool = True):
+        """`route_mode` / `version_filter` / `use_synonyms` 是消融实验的开关，
+        默认值等于当前行为——**加这些参数不能改变任何现有测试的结果**。
+
+        route_mode: "auto" 走三类分类；"always_retrieve" 全部走检索（消融基线）
+        version_filter: False 时检索不过滤版本，会同时召回新旧条文
+        use_synonyms: False 时关闭同义词映射
+        verify_answers: False 时跳过引用校验（消融里用来单独观察校验的作用）
+        """
         self.rules = rules if rules is not None else load_rules(ROOT / "rules")
         self.corpus = corpus if corpus is not None else load_corpus()
         self.universe = universe if universe is not None else load_universe()
-        self.retriever: Retriever = build_retriever(self.corpus)
+        self.retriever: Retriever = build_retriever(self.corpus, use_synonyms=use_synonyms)
         self.generator = generator or ExtractiveGenerator()
         self.lodging_rows = lodging_rows if lodging_rows is not None else _load_lodging_rows()
+        self.route_mode = route_mode
+        self.version_filter = version_filter
+        self.verify_answers = verify_answers
 
     # ------------------------------------------------------------ 入口
 
@@ -68,6 +83,12 @@ class QA:
         if as_of:
             cls.as_of = as_of
         cls.as_of = cls.as_of or "2026-10-19"
+
+        if self.route_mode == "always_retrieve":
+            # 消融基线：不看问题类型，一律检索。分类带来的增益靠它来量。
+            cls.notes.append("route_mode=always_retrieve，强制走检索")
+            cls.route = "retrieve"
+            return self._retrieve(question, cls, context_mode, top_k)
 
         if cls.route == "compute":
             answer = self._compute(question, cls)
@@ -214,7 +235,9 @@ class QA:
 
     def _retrieve(self, question: str, cls: Classification,
                   context_mode: str, top_k: int) -> Answer:
-        as_of = cls.as_of
+        # 消融开关：关掉版本过滤时，检索会同时召回新旧条文——
+        # 这正是要量化的故障模式，不是「实现得糙」。
+        as_of = cls.as_of if self.version_filter else None
 
         if context_mode == "full":
             chunks = self.retriever.all_for_version(as_of)
@@ -270,7 +293,9 @@ class QA:
     def _finalize(self, question: str, draft: Draft, trace: dict) -> Answer:
         from .verify import verify
 
-        verification = verify(draft.text, draft.citations, self.corpus)
+        verification = None
+        if self.verify_answers:
+            verification = verify(draft.text, draft.citations, self.corpus)
         return Answer(
             question=question,
             route=trace["route"],
