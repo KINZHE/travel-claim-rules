@@ -1,0 +1,121 @@
+# 住宿费的其他规定（非限额）
+#
+# 三条规则分别来自第二十四条、第二十五条和第十三条。
+# 其中 R-LODGING-ROOM-TYPE 与财行〔2015〕497 号第三条冲突，刻意保留（见 D-007）。
+
+- id: R-LODGING-ROOM-TYPE
+  topic: 住宿费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第十三条
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  scope: {}
+  when:
+    category: 住宿费
+  require: [applicant.person_level, lodging.nights]
+  assert:
+    field: lodging.nights[].room_type
+    allowed_by_person_level:
+      部级: [普通套间]
+      司局级: [单间, 标准间]
+      其他人员: [单间, 标准间]
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  on_conflict: 需人工确认
+  conflict_with: R-LODGING-ROOM-TYPE-SUPERSEDED
+  notes: >
+    本条与财行〔2015〕497 号第三条直接冲突：497 号写「自行选择宾馆住宿（不分房型）」，
+    两份文件都现行有效。按 D-007，不自行择一，命中即转人工。
+    这是第 3 周诊断层的验收用例之一：跑完若没报出这处冲突，说明一致性检查有漏。
+  decision: D-007
+
+- id: R-LODGING-ROOM-TYPE-SUPERSEDED
+  topic: 住宿费
+  source:
+    doc: 关于调整中央和国家机关差旅住宿费标准等有关问题的通知
+    doc_no: 财行〔2015〕497号
+    article: 第三条
+    url: https://www.mof.gov.cn/gp/xxgkml/xzzfs/201510/t20151020_2511939.htm
+    tier: A
+  version: "2015-497"
+  effective_from: "2016-01-01"
+  effective_to: null
+  scope: {}
+  when:
+    category: 住宿费
+  require: [lodging.nights]
+  assert:
+    field: lodging.nights[].room_type
+    allowed: any
+  on_pass: 通过
+  on_missing: 信息不足
+  on_conflict: 需人工确认
+  conflict_with: R-LODGING-ROOM-TYPE
+  notes: >
+    与 531 号第十三条互为冲突对。两条都写进规则库的目的不是「都执行」，
+    而是让冲突可被自动检出。若只保留一条，冲突就消失了，但那是掩盖不是解决。
+  decision: D-007
+
+- id: R-LODGING-NO-INVOICE
+  topic: 住宿费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第二十五条
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  scope: {}
+  when:
+    category: [住宿费, 城市间交通费, 伙食补助费, 市内交通费]
+  require: [lodging.stay_occurred, lodging.nights]
+  assert:
+    condition: "not (lodging.stay_occurred and any(n.receipt_present == false for n in lodging.nights))"
+  affects:
+    - 住宿费
+    - 城市间交通费
+    - 伙食补助费
+    - 市内交通费
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: >
+    联动规则：实际发生住宿而无住宿费发票的，四项费用全部不得报销。
+    「实际发生住宿」这个前置条件必须实现——写成「无发票即扣四项」会在当天往返、
+    根本没住宿的申请上误判。2006 版只影响住宿费一项，是跨版本差异 2。
+  decision: D-003
+
+- id: R-LODGING-PAYMENT-CARD
+  topic: 住宿费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第二十四条
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  scope: {}
+  when:
+    category: 住宿费
+  require: [lodging.nights]
+  assert:
+    field: lodging.nights[].payment_method
+    equals: 公务卡
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: >
+    「住宿费、机票支出等按规定用公务卡结算」。只检查住宿与机票；
+    「等」是开放列表，不能因为其他费用没用公务卡就判不通过，也不能因为清单里没写某类费用
+    就认定它不需要公务卡。这类开放列举只能覆盖明确部分（D-012）。
+  decision: D-012

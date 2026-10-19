@@ -1,0 +1,82 @@
+{
+  "synthetic": true,
+  "note": "模拟数据，用于演示与测试。不含任何真实票据或个人信息。",
+  "scenario": "上海出差 3 天，住了但缺一晚住宿发票，且人员级别未填",
+  "expected": "住宿限额与多人规则判信息不足；R-LODGING-NO-INVOICE 不通过并连带四项费用",
+
+  "claim_id": "SAMPLE-003",
+  "applicant": {
+    "person_level": null,
+    "unit_type": "中央单位"
+  },
+  "trip": {
+    "origin_city": "北京",
+    "destination_province": "上海",
+    "destination_city": "上海市",
+    "departure_date": "2026-05-11",
+    "return_date": "2026-05-13",
+    "approved": true,
+    "trip_purpose_type": "一般出差"
+  },
+  "lodging": {
+    "stay_occurred": true,
+    "nights": [
+      {
+        "date": "2026-05-11",
+        "amount": 480,
+        "room_type": "标准间",
+        "receipt_present": true,
+        "payment_method": "公务卡"
+      },
+      {
+        "date": "2026-05-12",
+        "amount": 470,
+        "room_type": "标准间",
+        "receipt_present": false,
+        "payment_method": "其他"
+      }
+    ]
+  },
+  "expense_lines": [
+    {
+      "line_id": "L1",
+      "category": "城市间交通费",
+      "fee_type": "客票",
+      "amount": 662,
+      "date": "2026-05-11",
+      "receipt_present": true,
+      "transport_type": "火车",
+      "transport_class": "二等座"
+    },
+    {
+      "line_id": "L2",
+      "category": "市内交通费",
+      "fee_type": "包干",
+      "amount": 240,
+      "receipt_present": true
+    },
+    {
+      "line_id": "L3",
+      "category": "伙食补助费",
+      "fee_type": "包干",
+      "amount": 300,
+      "receipt_present": true
+    }
+  ],
+  "host": {
+    "meal_arranged": false,
+    "meal_place_type": null,
+    "meal_place_has_standard": null,
+    "meal_place_standard": null,
+    "meal_fee_paid": null,
+    "transport_provided": false,
+    "transport_has_standard": null,
+    "transport_standard_rate": null,
+    "transport_half_days": null,
+    "transport_fee_paid": null,
+    "meeting_arranged_accommodation": false
+  },
+  "flags": {
+    "unit_insurance_purchased": false
+  }
+}

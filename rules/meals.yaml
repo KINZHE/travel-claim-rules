@@ -1,0 +1,80 @@
+# 伙食补助费规则
+#
+# 来源：531 号第十五至十八条 + 财办行〔2019〕104 号。
+# 注意：标准数值（100 / 120 元每人每天）来自 B/C 层级转载，不是财政部原件，
+# 元数据里的 tier 已标明（D-010）。
+
+- id: R-MEALS-ALLOWANCE
+  topic: 伙食补助费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第十六条、第十七条
+    table_ref: 伙食补助费标准表（未取得财政部原始附件，数值来自地方政府网站与高校文件转载）
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: B
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  threshold_from: "2014-01-01"
+  threshold_to: null
+  scope: {}
+  when:
+    category: 伙食补助费
+  require: [trip.departure_date, trip.return_date, trip.destination_province]
+  assert:
+    field: expense_lines[].amount
+    op: "=="
+    expected: "travel_days * daily_rate"
+    daily_rate:
+      default: 100
+      西藏: 120
+      青海: 120
+      新疆: 120
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: >
+    包干制，按自然日历天数计算，含出发日与返程日（项目假定，见 ambiguity-log A-005）。
+    数值来源是 B/C 层级：531 号的附表在 gov.cn 文本里标注「略」，官网未找到原件。
+    多个独立来源数值一致，可用，但必须在元数据里标明不是 A 级，不能含糊。
+    西藏、青海、新疆三地适用 120 元，是「按省份分档」的唯一例外。
+  decision: D-010
+
+- id: R-MEALS-HOST-MEAL
+  topic: 伙食补助费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第十八条
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  supplementary_source:
+    doc: 关于规范差旅伙食费和市内交通费收交管理有关事项的通知
+    doc_no: 财办行〔2019〕104号
+    article: 第一条
+    url: http://www.mof.gov.cn/gp/xxgkml/xzzfs/201907/t20190716_3301042.htm
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  threshold_from: "2019-08-01"
+  threshold_to: null
+  scope: {}
+  when:
+    category: 伙食补助费
+  require: [host.meal_arranged, host.meal_place_type, host.meal_fee_paid]
+  assert:
+    expected: "expected_host_meal_fee"
+    rule:
+      单位内部食堂_有对外标准: host.meal_fee_paid == meal_place_standard
+      单位内部食堂_无对外标准: "host.meal_fee_paid == daily_rate * (0.2 * breakfast + 0.4 * lunch + 0.4 * dinner)"
+      宾馆饭店: host.meal_fee_paid == 餐饮服务单位收费标准
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: >
+    531 号第十八条只写「应当向接待单位交纳伙食费」，没有金额，单看无法计算。
+    104 号把它补成可算的百分比：内部食堂无对外标准时，早餐按日标准的 20%，
+    午晚餐各 40%。这是「配套文件让模糊条款变可算」的典型例子（见 article-inventory 第十八条）。
+    注意：这是个人向接待单位交费，不是报销项，所以命中失败不影响报销金额，只影响合规提示。
+  decision: D-010

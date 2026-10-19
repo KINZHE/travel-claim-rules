@@ -65,6 +65,12 @@ python scripts/dump_lodging_table.py sources/2016-71/lodging-standards.xls sourc
 
 # 提取本项目选定的地区子集（只读 Sheet1）
 python scripts/extract_lodging_subset.py sources/2016-71/lodging-standards.xls data/
+
+# 规则库自检：字段是否都在 claim-schema 里、条款是否真在原文、阈值是否与 CSV 一致
+python scripts/check_rules.py
+
+# 由规则生成来源映射表（docs/source-mapping.md 是生成物，不要手改）
+python scripts/gen_source_mapping.py
 ```
 
 ## 环境
@@ -90,6 +96,10 @@ conda activate travel-claim-rules
 ## 边界说明
 
 - **规则覆盖的是明细表的一个子集**，不是全部 36 个地区。范围声明见规则文件头。
+- **住宿费规则只覆盖 2016-05-01 之后的申请**。2014–2015 年的标准附表未取得（原文标注「略」），
+  该时段的申请判「信息不足」，不套用现行标准（D-013）。
+- **伙食补助费的标准来自 B/C 层级来源**（地方政府网站、高校文件转载），不是财政部原件，
+  规则元数据的 `source.tier` 已标明（D-010）。
 - 诊断算法采用**有界字段域上的枚举**，字段一多就组合爆炸。工业界用 OBDD 或超矩形空间求差。
   适用边界写在 `docs/` 对应文档里。
 - 申请数据全部为模拟数据，不使用任何真实票据或个人报销记录。
@@ -101,8 +111,12 @@ conda activate travel-claim-rules
 - [x] 规则 schema 设计（已定：一条规则带按级别索引的限额表）
 - [x] 歧义记录起步（12 条，含一处**真实的规则冲突**：531 号第十三条 vs 497 号第三条的房型规定）
 - [x] 条款分类（33 条全部完成：可判断 20 / 需人工 5 / 无法结构化 8）
-- [ ] 规则提取（待做）
-- [ ] 规则引擎
+- [x] 输入数据模型（`docs/claim-schema.md` + 4 个模拟样例）
+- [x] 规则匹配与展开语义（`docs/rule-semantics.md`）
+- [x] **规则库第一版：31 条规则，约 60 个检查项**（住宿 19 / 交通 3 / 伙食 2 / 市内交通 3 / 报销准入 4）
+- [x] 规则自检脚本（三条断言，已用探针验证确实会失败）
+- [ ] 2006 版规则（第 2 周，只写 3 条用于版本对比）
+- [ ] 规则引擎（第 2 周）
 - [ ] 规则库质量诊断
 - [ ] 制度问答与引用校验
 - [ ] 评测集与消融实验

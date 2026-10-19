@@ -1,0 +1,111 @@
+# 报销管理与准入规则
+#
+# 来源：531 号第二条、第三条、第二十四条、第二十五条。
+# 这四条不属于某个费用项，而是对整份申请的前置条件与凭证要求。
+
+- id: R-REIMBURSE-UNIT-SCOPE
+  topic: 报销管理
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第二条、第三十一条
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  scope: {}
+  when: {}
+  require: [applicant.unit_type]
+  assert:
+    field: applicant.unit_type
+    allowed: [中央单位, 参照公务员法管理的事业单位, 其他事业单位]
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  on_review: 需人工确认
+  notes: >
+    准入校验，不是费用规则。中央单位与参照公务员法管理的事业单位强制适用；
+    其他事业单位是「参照执行」（第三十一条），可能另有本单位细则，所以判需人工而不是直接套用。
+    2006 版第二条把全部事业单位都纳入强制适用（version-history 差异 10）。
+    统计覆盖率时不应与费用类规则混在一起——这是两件性质不同的事。
+  decision: D-009
+
+- id: R-REIMBURSE-OUTSIDE-STATION
+  topic: 报销管理
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第三条
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  scope: {}
+  when: {}
+  require: [trip.origin_city, trip.destination_city]
+  assert:
+    condition: "trip.destination_city != trip.origin_city"
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: >
+    差旅费只覆盖「临时到常驻地以外地区」。同城发生的费用不属差旅费范围。
+    这条只判断地理范围，不判断是否公务——后者依赖审批，由 R-REIMBURSE-APPROVAL 负责。
+  decision: D-009
+
+- id: R-REIMBURSE-APPROVAL
+  topic: 报销管理
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第二十五条
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  scope: {}
+  when: {}
+  require: [trip.approved]
+  assert:
+    field: trip.approved
+    equals: true
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: >
+    「未经批准出差……不予报销」。第四条要求的「建立健全审批制度」本身无法程序化，
+    但「这次出差有没有走审批」是布尔字段，可以判。两条的分工在 article-inventory 第四条里已写明。
+  decision: D-009
+
+- id: R-REIMBURSE-VOUCHER
+  topic: 报销管理
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第二十四条
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  scope: {}
+  when: {}
+  require: [trip.approved, expense_lines, lodging.stay_occurred]
+  assert:
+    condition: "voucher_complete"
+    voucher_requirements:
+      - 出差审批单
+      - 机票或车票（城市间交通费发生时）
+      - 住宿费发票（住宿发生时）
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: >
+    「出差审批单、机票、车票、住宿费发票等凭证」末尾有个「等」——是开放列表。
+    规则只检查前三项明确列举的，其余允许申请人补充说明，
+    不能因为不在清单里就判「缺材料」。这是把自然语言列举写成程序规则的常见陷阱（D-012）。
+    「及时办理报销」没有时限数字，本规则不涉及。
+  decision: D-012

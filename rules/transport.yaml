@@ -1,0 +1,113 @@
+# 城市间交通费规则
+#
+# 来源：531 号第七至十条。交通等级用一张二维表驱动（D-011），
+# 展开成 3 级别 × 4 交通工具类型 = 12 个检查项。
+
+- id: R-TRANSPORT-CLASS
+  topic: 城市间交通费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第七条
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  scope: {}
+  when:
+    category: 城市间交通费
+  require: [applicant.person_level, expense_lines]
+  assert:
+    field: expense_lines[].transport_class
+    # 席别是「等级序列」不是枚举：坐低于标准的席别当然允许，只有超标准才违规。
+    # 所以用 rank 比较，不用集合包含（见 D-017）。
+    ranks:
+      火车:
+        硬座: 1
+        硬卧: 2
+        二等座: 3
+        二等软座: 3
+        一等座: 4
+        一等软座: 4
+        软座: 5
+        软卧: 5
+        商务座: 6
+      轮船:
+        三等舱: 1
+        二等舱: 2
+        一等舱: 3
+      飞机:
+        经济舱: 1
+        头等舱: 2
+      其他交通工具:
+        凭据报销: 1
+    max_rank_by_person_level:
+      火车: {部级: 6, 司局级: 5, 其他人员: 3}
+      轮船: {部级: 3, 司局级: 2, 其他人员: 1}
+      飞机: {部级: 2, 司局级: 1, 其他人员: 1}
+      其他交通工具: {部级: 1, 司局级: 1, 其他人员: 1}
+    excluded_classes: [出租小汽车]
+  on_pass: 通过
+  on_fail: 超支自理
+  on_missing: 信息不足
+  notes: >
+    超标时的结论是「超支部分由个人自理」而不是「整笔不报」——这是 531 号第七条的原文。
+    因此 on_fail 是一个独立的处理动作，不是简单的「不通过」；引擎需按差额计算自理部分。
+    「其他交通工具」排除出租小汽车，这个排除项必须写进规则，
+    否则出租车费会走城市间交通费通道（D-012）。
+    等级用 rank 而不是允许集合：司局级坐二等座是允许的（低于标准），
+    写成枚举会把它误判为违规（D-017）。
+  decision: D-011
+
+- id: R-TRANSPORT-FEES
+  topic: 城市间交通费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第九条
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  scope: {}
+  when:
+    category: 城市间交通费
+  require: [expense_lines]
+  assert:
+    condition: "all(line.fee_type in {民航发展基金, 燃油附加费} and line.receipt_present for line in expense_lines if line.fee_type in {民航发展基金, 燃油附加费})"
+  on_pass: 通过
+  on_missing: 信息不足
+  notes: >
+    只对第九条明确列举的两项做「可报销」判断。与 2006 版第八条相比，
+    「往返机场的专线客车费用」在新版不再列举，民航机场管理建设费改名为民航发展基金
+    （见 version-history 差异 6）。
+  decision: D-011
+
+- id: R-TRANSPORT-INSURANCE
+  topic: 城市间交通费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第十条
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  scope: {}
+  when:
+    category: 城市间交通费
+    fee_type: 交通意外保险
+  require: [expense_lines, flags.unit_insurance_purchased]
+  assert:
+    condition: "per_trip_insurance_count <= 1 and not flags.unit_insurance_purchased"
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: >
+    「每人次可以购买交通意外保险一份；所在单位统一购买的不再重复购买」。
+    后半句依赖跨系统信息（单位有没有统一买过），所以 flags.unit_insurance_purchased 缺失时必须
+    判信息不足，不能默认放行。这类「看似可判断、实际依赖外部状态」的规则最容易静默通过。
+  decision: D-012

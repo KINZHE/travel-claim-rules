@@ -1,0 +1,100 @@
+# 市内交通费规则
+#
+# 来源：531 号第十九、二十、二十一条与第三十条 + 财办行〔2019〕104 号第二条。
+# 本文件含一处「同一份文件内部」的规则冲突，刻意保留（见 D-008）。
+
+- id: R-LOCAL-ALLOWANCE
+  topic: 市内交通费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第二十条
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  scope: {}
+  when:
+    category: 市内交通费
+    fee_type: 包干
+  require: [trip.departure_date, trip.return_date]
+  assert:
+    field: expense_lines[].amount
+    op: "=="
+    expected: "travel_days * 80"
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  on_conflict: 需人工确认
+  conflict_with: R-LOCAL-MEETING-SCOPE
+  notes: >
+    定额包干，每人每天 80 元。2006 版对应项是「公杂费 30 元」，
+    既是改名也是提价，且用途从「市内交通、通讯等」收窄为纯市内交通
+    （version-history 差异 1）。天数口径同伙食补助费。
+  decision: D-003
+
+- id: R-LOCAL-HOST-TRANSPORT
+  topic: 市内交通费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第二十一条
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  supplementary_source:
+    doc: 关于规范差旅伙食费和市内交通费收交管理有关事项的通知
+    doc_no: 财办行〔2019〕104号
+    article: 第二条
+    url: http://www.mof.gov.cn/gp/xxgkml/xzzfs/201907/t20190716_3301042.htm
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  threshold_from: "2019-08-01"
+  threshold_to: null
+  scope: {}
+  when:
+    category: 市内交通费
+    fee_type: 接待单位交费
+  require: [host.transport_provided, host.transport_has_standard, host.transport_half_days, host.transport_fee_paid]
+  assert:
+    rule:
+      有收费标准: "host.transport_fee_paid <= min(收费标准, 80)"
+      无收费标准: "host.transport_fee_paid == 80 * 0.5 * host.transport_half_days"
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: >
+    与 2006 版第十六条的机制完全不同：旧版是「免费提供交通工具 → 公杂费减半」，
+    新版是「提供交通工具 → 向对方交费」，而且新版不会因此少拿市内交通费
+    （version-history 差异 5）。按旧版逻辑实现会算错。
+  decision: D-010
+
+- id: R-LOCAL-MEETING-SCOPE
+  topic: 市内交通费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第三十条
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  scope: {}
+  when:
+    category: 市内交通费
+  require: [trip.trip_purpose_type, host.meeting_arranged_accommodation]
+  assert:
+    condition: "not (trip.trip_purpose_type in {学术会议, 培训} and host.meeting_arranged_accommodation)"
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  on_conflict: 需人工确认
+  conflict_with: R-LOCAL-ALLOWANCE
+  notes: >
+    与 R-LOCAL-ALLOWANCE 在「会议期间的市内交通费」上冲突：第三十条说由举办方开支，
+    第二十条说按天包干。同一份文件内部的两条规则给出相反结论。
+    这比跨文件冲突更隐蔽，是规则库需要一致性检查的直接证据（D-008）。
+    第 3 周诊断层的第二个验收用例。
+  decision: D-008

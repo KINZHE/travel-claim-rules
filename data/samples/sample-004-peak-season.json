@@ -1,0 +1,82 @@
+{
+  "synthetic": true,
+  "note": "模拟数据，用于演示与测试。不含任何真实票据或个人信息。",
+  "scenario": "哈尔滨 8 月出差，司局级，每晚 520 元——超过淡季限额 450，但在旺季限额 540 以内",
+  "expected": "R-LODGING-HLJ-HARBIN 按旺季限额判通过；若误用 base 限额会判不通过",
+
+  "claim_id": "SAMPLE-004",
+  "applicant": {
+    "person_level": "司局级",
+    "unit_type": "中央单位"
+  },
+  "trip": {
+    "origin_city": "北京",
+    "destination_province": "黑龙江",
+    "destination_city": "哈尔滨市",
+    "departure_date": "2026-08-10",
+    "return_date": "2026-08-12",
+    "approved": true,
+    "trip_purpose_type": "学术会议"
+  },
+  "lodging": {
+    "stay_occurred": true,
+    "nights": [
+      {
+        "date": "2026-08-10",
+        "amount": 520,
+        "room_type": "标准间",
+        "receipt_present": true,
+        "payment_method": "公务卡"
+      },
+      {
+        "date": "2026-08-11",
+        "amount": 520,
+        "room_type": "标准间",
+        "receipt_present": true,
+        "payment_method": "公务卡"
+      }
+    ]
+  },
+  "expense_lines": [
+    {
+      "line_id": "L1",
+      "category": "城市间交通费",
+      "fee_type": "客票",
+      "amount": 903,
+      "date": "2026-08-10",
+      "receipt_present": true,
+      "transport_type": "飞机",
+      "transport_class": "经济舱"
+    },
+    {
+      "line_id": "L2",
+      "category": "市内交通费",
+      "fee_type": "包干",
+      "amount": 240,
+      "receipt_present": true
+    },
+    {
+      "line_id": "L3",
+      "category": "伙食补助费",
+      "fee_type": "包干",
+      "amount": 300,
+      "receipt_present": true
+    }
+  ],
+  "host": {
+    "meal_arranged": false,
+    "meal_place_type": null,
+    "meal_place_has_standard": null,
+    "meal_place_standard": null,
+    "meal_fee_paid": null,
+    "transport_provided": false,
+    "transport_has_standard": null,
+    "transport_standard_rate": null,
+    "transport_half_days": null,
+    "transport_fee_paid": null,
+    "meeting_arranged_accommodation": false
+  },
+  "flags": {
+    "unit_insurance_purchased": false
+  }
+}

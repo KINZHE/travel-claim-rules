@@ -1,0 +1,82 @@
+{
+  "synthetic": true,
+  "note": "模拟数据，用于演示与测试。不含任何真实票据或个人信息。",
+  "scenario": "南京出差 3 天，司局级，第一晚 520 元超过 490 元限额",
+  "expected": "R-LODGING-JS-CORE 不通过（第一晚）；其余通过",
+
+  "claim_id": "SAMPLE-002",
+  "applicant": {
+    "person_level": "司局级",
+    "unit_type": "中央单位"
+  },
+  "trip": {
+    "origin_city": "北京",
+    "destination_province": "江苏",
+    "destination_city": "南京市",
+    "departure_date": "2026-04-10",
+    "return_date": "2026-04-12",
+    "approved": true,
+    "trip_purpose_type": "一般出差"
+  },
+  "lodging": {
+    "stay_occurred": true,
+    "nights": [
+      {
+        "date": "2026-04-10",
+        "amount": 520,
+        "room_type": "标准间",
+        "receipt_present": true,
+        "payment_method": "公务卡"
+      },
+      {
+        "date": "2026-04-11",
+        "amount": 480,
+        "room_type": "标准间",
+        "receipt_present": true,
+        "payment_method": "公务卡"
+      }
+    ]
+  },
+  "expense_lines": [
+    {
+      "line_id": "L1",
+      "category": "城市间交通费",
+      "fee_type": "客票",
+      "amount": 443.5,
+      "date": "2026-04-10",
+      "receipt_present": true,
+      "transport_type": "火车",
+      "transport_class": "二等座"
+    },
+    {
+      "line_id": "L2",
+      "category": "市内交通费",
+      "fee_type": "包干",
+      "amount": 240,
+      "receipt_present": true
+    },
+    {
+      "line_id": "L3",
+      "category": "伙食补助费",
+      "fee_type": "包干",
+      "amount": 300,
+      "receipt_present": true
+    }
+  ],
+  "host": {
+    "meal_arranged": false,
+    "meal_place_type": null,
+    "meal_place_has_standard": null,
+    "meal_place_standard": null,
+    "meal_fee_paid": null,
+    "transport_provided": false,
+    "transport_has_standard": null,
+    "transport_standard_rate": null,
+    "transport_half_days": null,
+    "transport_fee_paid": null,
+    "meeting_arranged_accommodation": false
+  },
+  "flags": {
+    "unit_insurance_purchased": false
+  }
+}

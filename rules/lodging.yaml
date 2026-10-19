@@ -1,0 +1,520 @@
+# 住宿费限额规则
+#
+# 来源：财行〔2013〕531 号第十四条（规定）+ 财行〔2016〕71 号明细表（阈值）
+# 数据：data/lodging-subset.csv（6 个地区 15 行，是 36 个地区的子集）
+#
+# 数值一律以「元 / 人 · 天」计。规则按「一条规则一行表」组织（见 D-002），
+# 每条展开成 3 个检查项（base × 人员级别），有旺季的再加 3 个（peak × 级别）。
+#
+# 已确认的边界：
+#   - 只能覆盖 2016-05-01 之后的申请（2014–2015 年附表未取得，见 D-013）
+#   - 「其他地区」是兜底语义，不是城市名（见 D-005）
+#   - 本文件不含 2006 版规则（推迟到第 2 周）
+
+- id: R-LODGING-BJ-001
+  topic: 住宿费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第十四条
+    table_ref: 财行〔2016〕71号明细表 · 北京市（全市，第1行）
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  threshold_from: "2016-05-01"
+  threshold_to: null
+  scope:
+    province: 北京
+    whole_region: true
+  when:
+    category: 住宿费
+  require: [lodging.nights, trip.destination_city, applicant.person_level]
+  limits:
+    - kind: base
+      by_person_level:
+        部级: 1100
+        司局级: 650
+        其他人员: 500
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: >
+    直辖市，「全市」即全省。阈值来自 71 号明细表第 1 行，无旺季上浮。
+    这是垂直切片的基准规则：字段、匹配、展开、结果格式都由它先跑通。
+  decision: D-002
+
+- id: R-LODGING-HLJ-HARBIN
+  topic: 住宿费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第十四条
+    table_ref: 财行〔2016〕71号明细表 · 黑龙江省第1行（哈尔滨市）
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  threshold_from: "2016-05-01"
+  threshold_to: null
+  scope:
+    province: 黑龙江
+    cities: [哈尔滨市]
+  when:
+    category: 住宿费
+  require: [lodging.nights, trip.destination_city, applicant.person_level]
+  limits:
+    - kind: base
+      by_person_level:
+        部级: 800
+        司局级: 450
+        其他人员: 350
+    - kind: peak
+      months: [7, 8, 9]
+      applies_to_cities: [哈尔滨市]
+      by_person_level:
+        部级: 960
+        司局级: 540
+        其他人员: 420
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: >
+    旺季 7–9 月适用上浮价。逐晚判断，不是整单判断——同一趟行程跨 6 月和 7 月时，
+    两晚要用不同限额。这正是必须逐晚建模的原因（D-004）。
+    531 号第十二条只说「适当上浮，另行发布」，具体比例见 497 号（哈尔滨 20%）。
+  decision: D-004
+
+- id: R-LODGING-HLJ-OTHER
+  topic: 住宿费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第十四条
+    table_ref: 财行〔2016〕71号明细表 · 黑龙江省第2行（其他地区）
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  threshold_from: "2016-05-01"
+  threshold_to: null
+  scope:
+    province: 黑龙江
+    fallback: true
+  when:
+    category: 住宿费
+  require: [lodging.nights, trip.destination_city, applicant.person_level]
+  limits:
+    - kind: base
+      by_person_level:
+        部级: 750
+        司局级: 450
+        其他人员: 300
+    - kind: peak
+      months: [6, 7, 8]
+      applies_to_cities: [牡丹江市, 伊春市, 大兴安岭地区, 黑河市, 佳木斯市]
+      by_person_level:
+        部级: 900
+        司局级: 540
+        其他人员: 360
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: >
+    兜底行。注意旺季只对 5 个城市生效，不是全省——但 base 限额适用于全省其他所有市县。
+    这是「兜底 + 局部例外」的组合，最容易写错成「全省旺季」。
+  decision: D-005
+
+- id: R-LODGING-SH-001
+  topic: 住宿费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第十四条
+    table_ref: 财行〔2016〕71号明细表 · 上海市（全市）
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  threshold_from: "2016-05-01"
+  threshold_to: null
+  scope:
+    province: 上海
+    whole_region: true
+  when:
+    category: 住宿费
+  require: [lodging.nights, trip.destination_city, applicant.person_level]
+  limits:
+    - kind: base
+      by_person_level:
+        部级: 1100
+        司局级: 600
+        其他人员: 500
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: 直辖市，无旺季上浮。
+  decision: D-002
+
+- id: R-LODGING-JS-CORE
+  topic: 住宿费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第十四条
+    table_ref: 财行〔2016〕71号明细表 · 江苏省第1行（南京市、苏州市、无锡市、常州市、镇江市）
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  threshold_from: "2016-05-01"
+  threshold_to: null
+  scope:
+    province: 江苏
+    cities: [南京市, 苏州市, 无锡市, 常州市, 镇江市]
+  when:
+    category: 住宿费
+  require: [lodging.nights, trip.destination_city, applicant.person_level]
+  limits:
+    - kind: base
+      by_person_level:
+        部级: 900
+        司局级: 490
+        其他人员: 380
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: 重点城市组。与 R-LODGING-JS-OTHER 构成「枚举 + 兜底」一对。
+  decision: D-005
+
+- id: R-LODGING-JS-OTHER
+  topic: 住宿费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第十四条
+    table_ref: 财行〔2016〕71号明细表 · 江苏省第2行（其他地区）
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  threshold_from: "2016-05-01"
+  threshold_to: null
+  scope:
+    province: 江苏
+    fallback: true
+  when:
+    category: 住宿费
+  require: [lodging.nights, trip.destination_city, applicant.person_level]
+  limits:
+    - kind: base
+      by_person_level:
+        部级: 900
+        司局级: 490
+        其他人员: 360
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: >
+    兜底行。部级、司局级与核心城市相同，只有其他人员低 20 元——这类「只差一档」的数据
+    最容易在手工录入时填错，需靠 check_rules.py 与 CSV 对账。
+  decision: D-005
+
+- id: R-LODGING-GD-CORE
+  topic: 住宿费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第十四条
+    table_ref: 财行〔2016〕71号明细表 · 广东省第1行（广州市、珠海市、佛山市、东莞市、中山市、江门市）
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  threshold_from: "2016-05-01"
+  threshold_to: null
+  scope:
+    province: 广东
+    cities: [广州市, 珠海市, 佛山市, 东莞市, 中山市, 江门市]
+  when:
+    category: 住宿费
+  require: [lodging.nights, trip.destination_city, applicant.person_level]
+  limits:
+    - kind: base
+      by_person_level:
+        部级: 900
+        司局级: 550
+        其他人员: 450
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: 注意深圳是单列地区（计划单列市），不在此省组内，本子集未收录深圳。
+  decision: D-005
+
+- id: R-LODGING-GD-OTHER
+  topic: 住宿费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第十四条
+    table_ref: 财行〔2016〕71号明细表 · 广东省第2行（其他地区）
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  threshold_from: "2016-05-01"
+  threshold_to: null
+  scope:
+    province: 广东
+    fallback: true
+  when:
+    category: 住宿费
+  require: [lodging.nights, trip.destination_city, applicant.person_level]
+  limits:
+    - kind: base
+      by_person_level:
+        部级: 850
+        司局级: 530
+        其他人员: 420
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: 本子集内唯一一个部级限额低于 900 的省份，容易与核心城市组混淆。
+  decision: D-005
+
+- id: R-LODGING-SC-CHENGDU
+  topic: 住宿费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第十四条
+    table_ref: 财行〔2016〕71号明细表 · 四川省第1行（成都市）
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  threshold_from: "2016-05-01"
+  threshold_to: null
+  scope:
+    province: 四川
+    cities: [成都市]
+  when:
+    category: 住宿费
+  require: [lodging.nights, trip.destination_city, applicant.person_level]
+  limits:
+    - kind: base
+      by_person_level:
+        部级: 900
+        司局级: 470
+        其他人员: 370
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: 四川共有 7 个子区域，是本子集里划分最细的省份。
+  decision: D-005
+
+- id: R-LODGING-SC-ABAZ
+  topic: 住宿费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第十四条
+    table_ref: 财行〔2016〕71号明细表 · 四川省第2行（阿坝州、甘孜州）
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  threshold_from: "2016-05-01"
+  threshold_to: null
+  scope:
+    province: 四川
+    cities: [阿坝州, 甘孜州]
+  when:
+    category: 住宿费
+  require: [lodging.nights, trip.destination_city, applicant.person_level]
+  limits:
+    - kind: base
+      by_person_level:
+        部级: 800
+        司局级: 430
+        其他人员: 330
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: 自治州，按「州」命名而非「市」。城市名匹配时不能假设后缀一定是「市」。
+  decision: D-005
+
+- id: R-LODGING-SC-MIANLEYA
+  topic: 住宿费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第十四条
+    table_ref: 财行〔2016〕71号明细表 · 四川省第3行（绵阳市、乐山市、雅安市）
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  threshold_from: "2016-05-01"
+  threshold_to: null
+  scope:
+    province: 四川
+    cities: [绵阳市, 乐山市, 雅安市]
+  when:
+    category: 住宿费
+  require: [lodging.nights, trip.destination_city, applicant.person_level]
+  limits:
+    - kind: base
+      by_person_level:
+        部级: 800
+        司局级: 430
+        其他人员: 320
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: 与阿坝甘孜组相比只有「其他人员」不同（320 vs 330），手工录入极易抄反。
+  decision: D-005
+
+- id: R-LODGING-SC-YIBIN
+  topic: 住宿费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第十四条
+    table_ref: 财行〔2016〕71号明细表 · 四川省第4行（宜宾市）
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  threshold_from: "2016-05-01"
+  threshold_to: null
+  scope:
+    province: 四川
+    cities: [宜宾市]
+  when:
+    category: 住宿费
+  require: [lodging.nights, trip.destination_city, applicant.person_level]
+  limits:
+    - kind: base
+      by_person_level:
+        部级: 800
+        司局级: 430
+        其他人员: 300
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: >
+    与凉山州组成一处反直觉的数据：宜宾部级 800 > 凉山 750，但其他人员 300 < 凉山 330。
+    跨子区域没有单调性，不能按级别比例推算，每个组合必须独立取值（ambiguity-log A-011）。
+    这条也是规则匹配的边界测试用例：验证按最具体子区域匹配，而不是按数值大小。
+  decision: D-005
+
+- id: R-LODGING-SC-LIANGSHAN
+  topic: 住宿费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第十四条
+    table_ref: 财行〔2016〕71号明细表 · 四川省第5行（凉山州）
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  threshold_from: "2016-05-01"
+  threshold_to: null
+  scope:
+    province: 四川
+    cities: [凉山州]
+  when:
+    category: 住宿费
+  require: [lodging.nights, trip.destination_city, applicant.person_level]
+  limits:
+    - kind: base
+      by_person_level:
+        部级: 750
+        司局级: 430
+        其他人员: 330
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: 见 R-LODGING-SC-YIBIN 关于非单调性的说明。
+  decision: D-005
+
+- id: R-LODGING-SC-DESUIBA
+  topic: 住宿费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第十四条
+    table_ref: 财行〔2016〕71号明细表 · 四川省第6行（德阳市、遂宁市、巴中市）
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  threshold_from: "2016-05-01"
+  threshold_to: null
+  scope:
+    province: 四川
+    cities: [德阳市, 遂宁市, 巴中市]
+  when:
+    category: 住宿费
+  require: [lodging.nights, trip.destination_city, applicant.person_level]
+  limits:
+    - kind: base
+      by_person_level:
+        部级: 750
+        司局级: 430
+        其他人员: 310
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: 与凉山州同为部级 750，但其他人员 310 vs 330。
+  decision: D-005
+
+- id: R-LODGING-SC-OTHER
+  topic: 住宿费
+  source:
+    doc: 中央和国家机关差旅费管理办法
+    doc_no: 财行〔2013〕531号
+    article: 第十四条
+    table_ref: 财行〔2016〕71号明细表 · 四川省第7行（其他地区）
+    url: https://www.gov.cn/gongbao/content/2014/content_2667621.htm
+    tier: A
+  version: "2013-531"
+  effective_from: "2014-01-01"
+  effective_to: null
+  threshold_from: "2016-05-01"
+  threshold_to: null
+  scope:
+    province: 四川
+    fallback: true
+  when:
+    category: 住宿费
+  require: [lodging.nights, trip.destination_city, applicant.person_level]
+  limits:
+    - kind: base
+      by_person_level:
+        部级: 750
+        司局级: 430
+        其他人员: 300
+  on_pass: 通过
+  on_fail: 不通过
+  on_missing: 信息不足
+  notes: >
+    四川兜底行。全省 7 行里有 6 个具名子区域 + 1 个兜底，任何未列出的市县都落在这里。
+    若删掉这条，四川就会出现大片缺口——这正是第 3 周诊断层能抓到的情形。
+  decision: D-005
