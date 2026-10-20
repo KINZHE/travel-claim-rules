@@ -4,6 +4,9 @@ __pycache__/
 .pytest_cache/
 .venv/
 venv/
+*.egg-info/
+build/
+dist/
 
 # 环境实例不放进仓库（定义在 environment.yml，用 conda 重建）
 envs/

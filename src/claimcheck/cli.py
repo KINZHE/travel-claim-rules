@@ -14,10 +14,11 @@ import json
 import sys
 from pathlib import Path
 
+from .paths import find_root
 from .engine import check_item_universe, run
 from .model import load_claim, load_rules
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = find_root()
 
 
 def _digest(rules_dir: Path) -> str:

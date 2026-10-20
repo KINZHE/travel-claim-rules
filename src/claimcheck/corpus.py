@@ -15,7 +15,9 @@ import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+from .paths import find_root
+
+ROOT = find_root()
 SOURCES = ROOT / "sources"
 
 CN_NUM = "一二三四五六七八九十"

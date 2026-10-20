@@ -13,6 +13,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
+from .paths import find_root
 from .ablation import compare_full_vs_retrieve, run_ablation
 from .evaluate import (
     METRICS, Question, Record, failure_counts, file_hash, group_by,
@@ -20,7 +21,7 @@ from .evaluate import (
 )
 from .qa import QA
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = find_root()
 
 FAILURE_LABELS = {
     "ROUTE": "走错路径",

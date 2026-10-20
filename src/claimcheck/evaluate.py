@@ -13,9 +13,10 @@ from pathlib import Path
 
 import yaml
 
+from .paths import find_root
 from .qa import QA, Answer
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = find_root()
 QUESTIONS = ROOT / "data" / "eval" / "questions.yaml"
 FROZEN = ROOT / "data" / "eval" / "FROZEN.md"
 

@@ -16,7 +16,9 @@ import csv
 from dataclasses import dataclass
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+from .paths import find_root
+
+ROOT = find_root()
 LODGING_CSV = ROOT / "data" / "lodging-subset.csv"
 
 LEVELS = ["部级", "司局级", "其他人员"]

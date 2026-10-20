@@ -1,0 +1,10 @@
+# 运行时依赖
+pyyaml>=6.0
+
+# 开发与测试
+pytest>=7.0
+
+# 只在重新解析财政部原始 .xls 附件时需要（scripts/dump_lodging_table.py、
+# scripts/extract_lodging_subset.py）。日常使用规则库不需要。
+# pandas>=2.0
+# xlrd>=2.0

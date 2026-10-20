@@ -10,6 +10,7 @@ import csv
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .paths import find_root
 from .classify import Classification, classify
 from .corpus import Chunk, load_corpus
 from .generate import Draft, ExtractiveGenerator, Generator
@@ -18,7 +19,7 @@ from .retrieval import Retriever, build_retriever
 from .universe import Universe, load_universe
 from .verify import Citation
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = find_root()
 LODGING_CSV = ROOT / "data" / "lodging-subset.csv"
 
 REFUSAL_NO_RETRIEVAL = "NO_RETRIEVAL"

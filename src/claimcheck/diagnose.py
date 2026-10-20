@@ -21,6 +21,7 @@ from pathlib import Path
 
 import yaml
 
+from .paths import find_root
 from .checks import expand_check_items
 from .engine import run
 from .matcher import collect_known_cities, scope_matches
@@ -29,7 +30,7 @@ from .universe import (
     LEVELS, UNKNOWN_CITY, Universe, iter_lodging_cells, load_universe,
 )
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = find_root()
 
 # 只有这四个主题对应「一笔具体费用能不能报」。
 # 报销管理、准入校验不在此列——它们是整单级检查，彼此独立、可同时成立。

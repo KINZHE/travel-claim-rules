@@ -4,17 +4,27 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "claimcheck"
-version = "0.1.0"
-description = "差旅报销规则库的引擎与质量诊断"
+version = "1.0.0"
+description = "差旅报销规则库的引擎、质量诊断与制度问答"
+readme = "README.md"
 requires-python = ">=3.10"
+license = { file = "LICENSE" }
 dependencies = ["pyyaml"]
 
+[project.optional-dependencies]
+dev = ["pytest"]
+# 只在重新解析财政部原始 .xls 附件时需要
+sources = ["pandas", "xlrd"]
+
+[project.scripts]
+claimcheck = "claimcheck.cli:main"
+
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "tests"]
 testpaths = ["tests"]

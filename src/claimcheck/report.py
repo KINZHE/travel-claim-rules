@@ -14,6 +14,7 @@ from .diagnose import (
     Finding, coverage, find_conflicts, find_gaps, find_inert, find_structural_gaps,
 )
 from .model import Rule
+from .paths import ROOT
 from .universe import Universe, load_universe
 
 
@@ -157,7 +158,7 @@ def write_report(path: str | Path, rules: list[Rule], known: dict | None = None)
     target = Path(path)
     universe = load_universe()
     if known is None:
-        known_path = Path(__file__).resolve().parent.parent.parent / "docs" / "known-gaps.yaml"
+        known_path = ROOT / "docs" / "known-gaps.yaml"
         known = yaml.safe_load(known_path.read_text(encoding="utf-8")) or {}
     target.write_text(build_report(rules, universe, known), encoding="utf-8")
     return target
