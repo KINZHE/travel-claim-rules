@@ -8,7 +8,7 @@
 | --- | --- |
 | `docs/claim-schema.md` | 规则吃什么数据（字段名、类型、缺失语义） |
 | `docs/rule-semantics.md` | 规则怎么匹配、怎么展开成检查项、怎么合并结果 |
-| `docs/rule-decisions.md` | 每一处取舍的理由与面试讲法 |
+| `docs/rule-decisions.md` | 每一处取舍的理由与解释方式 |
 
 > **写规则前先读这三份。** schema 只回答「一条规则长什么样」，另外三份回答「怎么用」。
 

@@ -22,6 +22,16 @@ def sha(path: Path) -> str:
 
 
 def freeze(note: str = "") -> Path:
+    """记录冻结哈希。
+
+    幂等：如果题目集没变（哈希与已有记录一致），**不重写文件**——
+    否则每跑一次「验证」都会把冻结日期改成当天，看起来像重新冻结过。
+    冻结日期是首次冻结的日期，不该随便动。
+    """
+    ok, _ = check()
+    if ok and not note:
+        return FROZEN
+
     digest = sha(QUESTIONS)
     data = yaml.safe_load(QUESTIONS.read_text(encoding="utf-8")) or []
     by_route: dict[str, int] = {}
