@@ -316,6 +316,9 @@ python scripts/freeze_eval.py         # 核对评测题是否被改动
 ## 数据来源与许可
 
 制度原文来自中国政府网、财政部官网公开发布的政府信息公开内容，转载需注明来源。
-本项目代码与文档以 [MIT License](LICENSE) 发布；`sources/` 下的政府文件不适用该许可证。
+
+本项目**代码与文档**以 [MIT License](LICENSE) 发布。`sources/` 下的政府文件原文及其附件
+不适用该许可证，按原发布渠道的要求使用——来源 URL、发布机构与抓取日期见
+[`sources/SOURCES.md`](sources/SOURCES.md)。
 
 > 本项目用于技术演示与学习。制度会修订，实际报销请以所在单位现行规定为准。
